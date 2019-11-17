@@ -1,0 +1,110 @@
+1,aerinite,"[H, C, O, Na, Mg, Al, Si, Ca, Fe]","[28.13, 0.78, 49.22, 1.17, 1.48, 3.67, 9.38, 3.52, 2.66]",quartz and silicates,
+2,aikinite,"[S, Cu, Pb, Bi]","[50.00, 16.67, 16.67, 16.67]",sulfides,tetrahedrite-bournonite-boulangerite
+3,ajoite,"[H, O, Na, Al, Si, K, Cu]","[17.11, 53.48, 1.20, 1.60, 15.51, 0.40, 10.70]",quartz and silicates,zeolite
+4,algodonite,"[Cu, As]","[85.00, 15.00]",sulfides,chalcosite
+5,antimonpearceite,"[S, Cu, As, Ag, Sb]","[37.93, 8.62, 1.72, 46.55, 5.17]",sulfides,proustite-stephanite
+6,antlerite,"[H, O, S, Cu]","[25.00, 50.00, 6.25, 18.75]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+7,apachite,"[H, O, Si, Cu]","[27.16, 49.38, 12.35, 11.11]",quartz and silicates,zeolite
+8,arsentsumebite,"[H, O, S, Cu, As, Pb]","[6.67, 60.00, 6.67, 6.67, 6.67, 13.33]","phosphates, arsenates and vanadates",
+9,arthurite,"[H, O, P, S, Fe, Cu, As]","[30.91, 50.91, 2.18, 0.73, 7.27, 3.64, 4.36]","phosphates, arsenates and vanadates",turquoise-olivenite
+10,atacamite,"[H, O, Cl, Cu]","[33.33, 33.33, 11.11, 22.22]",halides,chlorargyrite-atacamite
+11,aurichalcite,"[H, C, O, Cu, Zn]","[24.00, 8.00, 48.00, 5.00, 15.00]",carbonates,cerussite-malachite-hydrozinkite
+12,azurite,"[H, C, O, Cu]","[13.33, 13.33, 53.33, 20.00]",carbonates,cerussite-malachite-hydrozinkite
+13,bayldonite,"[H, O, Cu, As, Pb]","[19.05, 52.38, 14.29, 9.52, 4.76]","phosphates, arsenates and vanadates",turquoise-olivenite
+14,beaverite,"[H, O, S, Fe, Cu, Pb]","[23.08, 53.85, 7.69, 7.69, 3.85, 3.85]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+15,bellingerite,"[H, O, Cu, I]","[12.12, 60.61, 9.09, 18.18]",borates and nitrates,salpeter
+16,berryite,"[S, Cu, Ag, Pb, Bi]","[51.61, 9.68, 6.45, 9.68, 22.58]",sulfides,tetrahedrite-bournonite-boulangerite
+17,berzelianite,"[Cu, Se]","[66.67, 33.33]",sulfides,chalcosite
+18,boleite,"[H, O, Cl, K, Cu, Ag, Pb]","[22.02, 22.02, 28.44, 0.46, 11.01, 4.13, 11.93]",halides,chlorargyrite-atacamite
+19,boothite,"[H, O, Mg, S, Cu]","[51.85, 40.74, 0.93, 3.70, 2.78]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+20,bornite,"[S, Fe, Cu]","[40.00, 10.00, 50.00]",sulfides,chalcopyrite-bornite
+21,botallackite,"[H, O, Cl, Cu]","[33.33, 33.33, 11.11, 22.22]",halides,chlorargyrite-atacamite
+22,bournonite,"[S, Cu, Sb, Pb]","[50.00, 16.67, 16.67, 16.67]",sulfides,tetrahedrite-bournonite-boulangerite
+23,brochantite,"[H, O, S, Cu]","[28.57, 47.62, 4.76, 19.05]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+24,caledonite,"[H, C, O, S, Cu, Pb]","[15.79, 2.63, 55.26, 7.89, 5.26, 13.16]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+25,carrollite,"[S, Co, Ni, Cu]","[57.14, 21.43, 7.14, 14.29]",sulfides,pyrrhotine-pentlandite
+26,chalcophyllite,"[H, O, Al, S, Cu, As]","[45.5, 41.7, 0.95, 1.42, 8.53, 1.9]","phosphates, arsenates and vanadates",turquoise-olivenite
+27,chalcopyrite,"[S, Fe, Cu]","[50.00, 25.00, 25.00]",sulfides,chalcopyrite-bornite
+28,chalcosite,"[S, Cu]","[33.33, 66.67]",sulfides,chalcosite
+29,chalcotrichite,"[O, Cu]","[33.33, 66.67]",oxides,cuprite-zinkite-tenorite
+30,chenevixite,"[H, O, Fe, Cu, As]","[18.18, 54.55, 9.09, 9.09, 9.09]","phosphates, arsenates and vanadates",turquoise-olivenite
+31,chrysocolla,"[H, O, Al, Si, Cu]","[36.36, 45.45, 2.27, 9.09, 6.82]",quartz and silicates,zeolite
+32,claraite,"[H, C, O, S, Cu, Zn, As]","[28.71, 4.24, 47.74, 1.03, 13.64, 2.28, 2.36]",carbonates,
+33,colusite,"[S, V, Cu, As]","[50.00, 3.13, 37.50, 9.38]",sulfides,tetrahedrite-bournonite-boulangerite
+34,connellite,"[H, O, S, Cl, Cu]","[38.74, 37.70, 0.52, 4.19, 18.85]",halides,chlorargyrite-atacamite
+35,copiapite,"[H, O, S, Fe]","[42.42, 46.46, 6.06, 5.05]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+36,cornetite,"[H, O, P, Cu]","[21.43, 50.00, 7.14, 21.43]","phosphates, arsenates and vanadates",turquoise-olivenite
+37,cornubite,"[H, O, Si, P, V, Cu, Zn, As]","[17.33, 51.99, 0.22, 0.09, 0.04, 21.97, 0.17, 8.19]","phosphates, arsenates and vanadates",turquoise-olivenite
+38,covellite,"[S, Cu]","[50.00, 50.00]",sulfides,chalcosite
+39,creaseyite,"[H, O, Si, Fe, Cu, Pb]","[26.09, 50.00, 10.87, 4.35, 4.35, 4.35]",quartz and silicates,
+40,crednerite,"[O, Mn, Cu]","[50.00, 25.00, 25.00]",oxides,cuprite-zinkite-tenorite
+41,Cu-rich allophane,"[H, O, Al, Si, Cu]","[29.27, 48.73, 9.81, 8.19, 4]",quartz and silicates,kaolinite-montmorillonite
+42,cuprite,"[O, Cu]","[33.33, 66.67]",oxides,cuprite-zinkite-tenorite
+43,cyanotrichite,"[H, O, Al, S, Cu]","[39.02, 43.90, 4.88, 2.44, 9.76]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+44,delafossite,"[O, Fe, Cu]","[50.00, 25.00, 25.00]",oxides,cuprite-zinkite-tenorite
+45,derriksite,"[H, O, Cu, Se, U]","[22.22, 51.85, 14.81, 7.41, 3.70]",oxides,uraninite-ianthinite
+46,descloizite,"[H, O, V, Zn, Pb]","[11.11, 55.56, 11.11, 11.11, 11.11]","phosphates, arsenates and vanadates",pyromorphite-adamine
+47,devilline,"[H, O, S, Ca, Cu]","[33.33, 47.22, 5.56, 2.78, 11.11]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+48,digenite,"[S, Cu]","[35.71, 64.29]",sulfides,chalcosite
+49,dioptase,"[H, O, Si, Cu]","[25, 50, 12.5, 12.5]","quartz and silicates
+","zeolite"
+50,duftite,"[H, O, Cu, As, Pb]","[11.11, 55.56, 11.11, 11.11, 11.11]","phosphates, arsenates and vanadates",pyromorphite-adamine
+51,emplektite,"[S, Cu, Bi]","[50.00, 25.00, 25.00]",sulfides,tetrahedrite-bournonite-boulangerite
+52,enargite,"[S, Cu, As]","[50, 37.5, 12.5]","sulfides
+","Tetrahedrite-bournonite-boulangerite"
+53,euchroite,"[H, O, Cu, As]","[38.89, 44.44, 11.11, 5.56]","phosphates, arsenates and vanadates",turquoise-olivenite
+54,fornacite,"[H, O, Cr, Cu, As, Pb]","[6.67, 60.00, 10.00, 5.00, 3.33, 15.00]","sulphates, chromates, molybdates and wolframates",krokoite-wulfenite-scheelite
+55,freibergite,"[S, Fe, Cu, Zn, Ag, Sb]","[43.86, 5.26, 15.79, 1.75, 19.30, 14.04]",sulfides,tetrahedrite-bournonite-boulangerite
+56,germanite,"[S, Fe, Cu, Ge]","[48.8, 6.06, 39.39, 6.06]",sulfides,tetrahedrite-bournonite-boulangerite
+57,gilalite,"[H, O, Si, Cu]","[28.57, 49.98, 12.24, 10.20]",quartz and silicates,zeolite
+58,gladite,"[S, Cu, Pb, Bi]","[56.25, 6.25, 6.25, 31.25]",sulfides,tetrahedrite-bournonite-boulangerite
+59,glaukosphaerite,"[H, C, O, Ni, Cu]","[20, 10, 50, 5, 15]",carbonates,cerussite-malachite-hydrozinkite
+60,goudeyite,"[H, O, Al, Cu, As, Y]","[27.91, 48.84, 1.74, 13.95, 6.98, 0.58]","phosphates, arsenates and vanadates",turquoise-olivenite
+61,gowerite,"[H, B, O, Ca]","[31.25, 18.75, 46.88, 3.13]",borates and nitrates,colemanite-uralborite
+62,halloysite,"[H, O, Al, Si]","[23.53, 52.94, 11.76, 11.76]",quartz and silicates,kaolinite-montmorillonite
+63,idaite,"[S, Fe, Cu]","[50, 12.5, 37.5]",sulfides,chalcosite
+64,kinoite,"[H, O, Si, Ca, Cu]","[17.39, 52.17, 13.04, 8.7, 8.7]",quartz and silicates,hemimorphite
+65,klinoklas,"[H, O, Cu, As]","[21.43, 50, 21.43, 7.14]","phosphates, arsenates and vanadates",turquoise-olivenite
+66,konichalcite,"[H, O, Ca, Cu, As]","[11.11, 55.56, 11.11, 11.11, 11.11]","phosphates, arsenates and vanadates",turquoise-olivenite
+67,kroehnkite,"[H, O, Na, S, Cu]","[21.05, 52.63, 10.53, 10.53, 5.26]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+68,krupkaite,"[S, Cu, Pb, Bi]","[54.55, 9.09, 9.09, 27.27]",sulfides,tetrahedrite-bournonite-boulangerite
+69,krutaite,"[Cu, Se]","[33.33, 66.67]",sulfides,"chalcosite"
+70,langite,"[H, O, S, Cu]","[37.04, 44.44, 3.7, 14.81]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+71,lavendulan,"[H, O, Na, Cl, Ca, Cu, As]","[23.26, 48.84, 2.33, 2.33, 2.33, 11.63, 9.3]","phosphates, arsenates and vanadates",turquoise-olivenite
+72,libethenite,"[H, O, P, Cu]","[11.11, 55.56, 11.11, 22.22]","phosphates, arsenates and vanadates",turquoise-olivenite
+73,lindgrenite,"[H, O, Cu, Mo]","[11.76, 58.82, 17.65, 11.76]","sulphates, chromates, molybdates and wolframates",krokoite-wulfenite-scheelite
+74,malachite,"[H, C, O, Cu]","[20, 10, 50, 20]",carbonates,cerussite-malachite-hydrozinkite
+75,melanterite,"[H, O, S, Fe]","[51.85, 40.74, 3.7, 3.7]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+76,metatorbernite,"[H, O, P, Cu, U]","[39.02, 48.78, 4.88, 2.44, 4.88]","phosphates, arsenates and vanadates",torbernite-carnotite-annabergite
+77,mixite,"[H, O, Cu, As, Bi]","[27.91, 48.84, 13.95, 6.98, 2.33]","phosphates, arsenates and vanadates",turquoise-olivenite
+78,mottramite,"[H, O, V, Cu, Pb]","[11.11, 55.56, 11.11, 11.11, 11.11]","phosphates, arsenates and vanadates",pyromorphite-adamine
+79,nakauriite,"[H, C, O, S, Cu]","[54.26, 0.53, 38.83, 2.13, 4.26]","sulphates, chromates, molybdates and wolframates",
+80,natrochalcite,"[H, O, Na, S, Cu]","[16.67, 55.56, 5.56, 11.11, 11.11]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+81,olivenite,"[H, O, Cu, As]","[11.11, 55.56, 22.22, 11.11]","phosphates, arsenates and vanadates",turquoise-olivenite
+82,paratacamite,"[H, O, Cl, Cu, Zn]","[33.33, 33.33, 11.11, 20.83, 1.39]",halides,chlorargyrite-atacamite
+83,parnauite,"[H, O, S, Cu, As]","[36.92, 44.62, 1.54, 13.85, 3.08]","phosphates, arsenates and vanadates",turquoise-olivenite
+84,penroseite,"[Co, Ni, Cu, Se]","[10, 20, 3.33, 66.67] ",sulfides,Pyrrhotine-pentlandite
+85,plancheite,"[H, O, Si, Cu]","[12.24, 55.10, 16.33, 16.33]",quartz and silicates,zeolite
+86,posnjakite,"[H, O, S, Cu]","[33.33, 45.83, 4.17, 16.67]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+87,pseudomalachite,"[H, O, P, Cu]","[17.39, 52.17, 8.7, 21.74]","phosphates, arsenates and vanadates",turquoise-olivenite
+88,richelsdorfite,"[H, O, Cl, Ca, Cu, As, Sb]","[30.51, 47.46, 1.69, 3.39, 8.47, 6.78, 1.69]","phosphates, arsenates and vanadates",
+89,rosasite,"[H, C, O, Cu, Zn]","[20,10,50,15, 5]",carbonates,cerussite-malachite-hydrozinkite
+90,schulenbergite,"[H, C, O, S, Cu, Zn]","[35.16, 1.1, 45.05, 3.3, 11.54, 3.85]","sulphates, chromates, molybdates and wolframates",
+91,schwazite,"[S, Cu, Sb, Hg]","[44.83, 31.03, 13.79, 10.34]",sulfides,tetrahedrite-bournonite-boulangerite
+92,seligmannite,"[S, Cu, As, Pb]","[50,16.67, 16.67, 16.67]",sulfides,tetrahedrite-bournonite-boulangerite
+93,serpierte,"[H, O, S, Ca, Cu, Zn]","[33.33, 47.22, 5.56, 2.78, 8.33, 2.78]","sulphates, chromates, molybdates and wolframates",alaun-chalkantite
+94,shattuckite,"[H, O, Si, Cu]","[8, 56, 16, 20]",quartz and silicates,zeolite
+95,stannine,"[S, Fe, Cu, Sn]","[50, 12.5, 25, 12.5]",sulfides,chalcopyrite-bornite
+96,strashimirite,"[H, O, Cu, As]","[27.45, 49.02, 15.69, 7.84]","phosphates, arsenates and vanadates",turquoise-olivenite
+97,stromeyerite,"[S, Cu, Ag]","[33.33, 33.33, 33.33]",sulfides,argentite
+98,tenorite,"[O, Cu]","[50, 50]",oxides,cuprite-zinkite-tenorite
+99,tetrahedrite,"[S, Fe, Cu, Zn, Sb]","[44.83, 5.17, 34.48, 1.72, 13.79]",sulfides,tetrahedrite-bournonite-boulangerite
+100,tsumebite,"[H, O, P, S, Cu, Pb]","[6.67, 60, 6.67, 6.67, 6.67, 13.33]","phosphates, arsenates and vanadates",pyromorphite-adamine
+101,turquoise,"[H, O, Al, P, Cu]","[29.09, 50.91, 10.91, 7.27, 1.82]","phosphates, arsenates and vanadates",turquoise-olivenite
+102,tyrolite,"[H, C, O, Ca, Cu, As]","[37.29, 1.13, 44.63, 2.26, 10.17, 4.52]","phosphates, arsenates and vanadates",turquoise-olivenite
+103,umangite,"[Cu, Se]","[60,40]",sulfides,chalcosite
+104,vauquelinite,"[H, O, P, Cr, Cu, Pb]","[6.67, 60, 6.67, 6.67, 6.67, 13.33]","sulphates, chromates, molybdates and wolframates",krokoite-wulfenite-scheelite
+105,vesuvianite,"[H, O, F, Na, Mg, Al, Si, Ca, Fe]","[4.48, 55.97, 2.24, 3.54, 2.91, 5.82, 13.43, 10.63, 0.97]",quartz and silicates,epidote-vesuvianite
+106,volborthite,"[H, O, V, Cu]","[27.27, 50, 9.09, 13.64]","phosphates, arsenates and vanadates",pyromorphite-adamine
+107,woodwardite,"[H, O, Al, S, Cu]","[39.85, 42.91, 3.83, 1.92, 11.49]","sulphates, chromates, molybdates and wolframates",
+108,zeunerite,"[H, O, Cu, As, U]","[46.43, 44.64, 1.70, 3.57, 3.57]","phosphates, arsenates and vanadates",torbernite-carnotite-annabergite
