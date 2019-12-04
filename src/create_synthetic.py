@@ -1,7 +1,9 @@
 import csv
 import platform
 import time
+from random import sample, uniform
 
+import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -13,42 +15,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 project_path = './ml'
 
-def read_mineral_list(file_path):
+def read_mineral_list(file_path, allow_pickle=True):
     """
     Reads list of all minerals, checks them for possible mistakes, reformats into easily iterable list
     """
-    print('BEGIN Read list of all minerals, verify data...')
-    with open(file_path, newline='') as file:
-        f = csv.reader(file)
-        
-        ids = list()
-        names = list()
-        final = list()
-        for num, name, elements, composition, m_class, m_group in f:
-            # verify indexing integrity
-            if ids:
-                assert int(num) - int(ids[-1]) == 1, f'indexing gap found for \'{name}\' ({num})'
-            
-            assert num not in ids, f'duplicate ids found for \'{name}\' ({num})'
-            ids.append(num)
-
-            # check for duplicate elements
-            assert name not in names, f'duplicate element names found for \'{name}\' ({num})'
-            names.append(name)
-
-            # verify amount of elements matches amount of compositions
-            elements = elements.strip('[]').replace(' ', '').split(',')
-            composition = [float(i) for i in composition.strip('[]').replace(']','').split(',')]
-            assert len(elements) == len(composition), f'mismatch in amount of elements/compositions found for \'{name}\' ({num})'
-
-            # verify sum of composition is valid
-            assert 99.9 < sum(composition) < 100.999, f'invalid sum of atomic composition for \'{name}\' ({num})'
-
-            # add asserted element to final output
-            final.append((num, name, elements, composition, m_class, m_group))
-        
-        print('DONE! Reading and verifying minerals.')
-        return final
+    print('BEGIN Read list of all minerals...')
+    minerals = np.load(file_path, allow_pickle=allow_pickle)
+    print('DONE! Reading minerals.')
+    return minerals
 
 def fix_sum_to_100(composition, method=0):
     """
@@ -74,7 +48,7 @@ def assemble_nist_url(elements, percentages, low_wl=180, high_wl=960, resolution
     """
     print('  BEGIN Assemble NIST LIBS URL...')
     assert type(elements) is list
-    assert type(percentages) is list
+    assert type(percentages) is list or np.ndarray
     content_len = len(elements)
     # base URL
     request_url = 'https://physics.nist.gov/cgi-bin/ASD/lines1.pl'
@@ -84,6 +58,7 @@ def assemble_nist_url(elements, percentages, low_wl=180, high_wl=960, resolution
     spec_string = '&spectra=' + '%2C'.join([f'{elements[i]}0-2' for i in range(content_len)])
 
     for i in range(content_len):
+        # add comp_string and spec_string only for first element
         request_url += '{}&mytext%5B%5D={}&myperc%5B%5D={}{}'.format(comp_string if i == 0 else '', 
                                                                      elements[i], 
                                                                      percentages[i], 
@@ -161,20 +136,20 @@ def clean_nist_data(data, use_header=False):
     # data is read as string, has to be converted into list of lists
     # only keep first 2 columns (wavelength + sum intensity)
     split_data = [line.split(',')[:2] for line in data.split('\n')[int(not use_header):]]
+    # clean up invalid data
+    cleaned_split_data = [l for l in split_data if len(l) == 2]
+    # convert from string to float to story in numpy array later
+    float_data = np.array(cleaned_split_data).astype(float)
     print('  DONE! Cleaning formatting NIST data.')
-    return split_data
+    return float_data
 
-def write_to_csv(data, filename, delimiter=','):
+def write_to_file(data, filename):
     """
     Write collected information to file.
     """
-    print('  BEGIN Write data to .csv...')
-    with open(filename, 'w+') as f:
-        for line in data:
-            f.write('{}\n'.format(','.join(line)))
-        # writer = csv.writer(f, delimiter)
-        # writer.writerows(data)
-    print('  DONE! Writing data to .csv.')
+    print('  BEGIN Write data to npy file...')
+    np.save(filename, data)
+    print('  DONE! Writing data to npy file.')
 
 def reset_webdriver(driver):
     """
@@ -197,64 +172,122 @@ def reset_webdriver(driver):
     driver.get('about:blank')
     return driver
 
-def calculate_alterations(composition, quantity):
+def calculate_random_segments(num_segments):
+    """
+    Splits the value ranges of electron temperature and density into several segments to allow controlled randomisation
+    of the entire domain.
+    """
+    # charge and density boundaries computed from real-world measurement averages sampled from physical chemistry dept.
+    t_ev_segments = np.linspace(0.73, 1.12, num=num_segments)
+    t_ev_ranges = [(t_ev_segments[i], t_ev_segments[i+1]) for i in range(num_segments-1)]
+    eden_segments = np.linspace(5.5e+16, 1.97e+17, num=num_segments)
+    eden_ranges = [(eden_segments[i], eden_segments[i+1]) for i in range(num_segments-1)]
+    return zip(t_ev_ranges, eden_ranges)
+
+def calculate_variations(source, quantity, min_noise=1e-16, max_noise=0.05):
     """
     Calculates quantity many alterations of the passed atomic composition.
+    Formula:
+        - start with max_noise worth of possible variation
+        - for each element, random roll between [1e-16, max_noise) of variation to subtract from it
+        - decrease max_noise by the result of each roll, collect subtracted amount
+        - for each element, roll between [0, sum_sum_removed) to add to the element
     """
-    alterations = composition
-    # 1)
-    #   take 3% relative from 1 random element
-    #   give amount to 1st random element (up to 3% relative to its current size)
-    #   give amount to next random element, etc, until taken 3% are used up
-    # 2)
-    #   roll random 0.0 - 3.0 (relative) to take from all elements in a row, randomised
-    #   when sum of 3% taken is reached, roll random 0.0 - 3.0 (relative) to give back 
-    #   to all elements in a row, randomised
-    #   check that small elements dont get more than 3% (relative)
+    results = list()
+    for _ in range(quantity):
+        # duplicate source list
+        copy = source[:]
+        top_noise = max_noise
+        sum_removed = 0
+        # iterate over shuffled indices of original list, treats list as scrambled while maintaining original order for 
+        # re-use with indentically ordered original dataset values later
+        for i in sample(range(len(source)), len(source)):
+            # determine noise intensity, reduce top_noise
+            noise = uniform(min_noise, top_noise)
+            top_noise -= noise
 
-    return alterations
+            # subtract calculated noise from current element, noise: [1e-16, 0.05-)
+            take_amount = copy[i] * noise
+            copy[i] -= take_amount
+            sum_removed += take_amount
+        
+        give_range = list(range(len(source)))
+        while(sum_removed != 0 and give_range):
+            for i in sample(give_range, len(give_range)):
+                # determine amount of noise to give back to current element
+                give_amount = uniform(0, sum_removed)
+                # maximum additional mass the current element can legally receive
+                cap = copy[i] * 0.05
+                # if amount of noise larger than element's cap, only add noise up to cap and remove element from rotation
+                # this is done to make sure you don't overcap smaller elemental components, results in distributing the 
+                # remaining noise among the larger elements until completely distributed. (So no further fix-to-100%
+                # approaches have to be applied that would mess with the achieved distribution)
+                if give_amount > cap:
+                    copy[i] += cap
+                    sum_removed -= cap
+                    give_range.remove(i)
+                else:
+                    copy[i] += give_amount
+                    sum_removed -= give_amount
+        results.append(copy)
+    return results
 
-def create_synthetic_dataset():
+def create_synthetic_dataset(data_source_path, measurement_segmentation, amount_variations):
     """
     Main routine to generate synthetic dataset.
     """
     print('BEGIN Create synthetic mineral dataset...')
     # read in list of all elements and verify integrity
-    all_minerals = read_mineral_list('data/synthetic_minerals_raw_final.csv')
+    all_minerals = read_mineral_list(data_source_path)
 
     # webdriver for NIST data access, persistent outside of loop to cut down load times of instance creation
     driver = get_webdriver()
     for num, name, elements, composition, m_class, m_group in all_minerals:
         print(f'BEGIN Next element: {name}')
-        # calculate random alterations of composition
-        alterations = calculate_alterations(composition, 10)
-        for a in ['1']:
-            # make sum of composing elements be exactly 100
-            fix_sum_to_100(composition, method=0)
+        # calculate random alterations of electron temperature and density
+        for i,(t_ev,e_den) in enumerate(calculate_random_segments(measurement_segmentation)):
+            # calculate random alterations of composition
+            print(f'  BEGIN Draw from randomisation segment {i+1} of {measurement_segmentation-1}')
+            variations = calculate_variations(composition, amount_variations)
+            for j,var in enumerate(variations):
+                print(f'  BEGIN Atomic variation {j+1} of {len(variations)}')
+                # make sum of composing elements be exactly 100
+                fix_sum_to_100(var, method=0)
 
-            # create NIST link, collect data
-            link = assemble_nist_url(elements, composition, resolution=1000, temp=1, eden='1e17')
-            # clean up results, discard columns
-            data = retrieve_nist_data(driver, link, 1000)
-            data = clean_nist_data(data)
-            # save to file
-            write_to_csv(data, 'results/placeholder_filename.csv')
+                # create NIST link, collect data
+                t_ev_sample = uniform(t_ev[0], t_ev[1])
+                e_den_sample = str(uniform(e_den[0], e_den[1])).replace('+','') # NIST site malfunctions for + in exp notation
+                link = assemble_nist_url(elements, var, resolution=1000, temp=t_ev_sample, eden=e_den_sample)
+                # clean up results, discard columns
+                data = retrieve_nist_data(driver, link, 1000)
+                data = clean_nist_data(data)
+                # save to file
+                data = np.array([data, np.array([m_class, m_group, num])])
+                
+                # <laufende nummer>_<klasse>_<gruppe>_<ausführung> 
+                new_file_name = f'{num:04}_{m_class:02}_{m_group:03}_{i:02}_{j:05}'
+                write_to_file(data, f'results/{new_file_name}')
 
-            # reset webdriver for next iteration
-            driver = reset_webdriver(driver)
-            print(f'DONE! with element {name}')
-
+                # reset webdriver for next iteration
+                driver = reset_webdriver(driver)
+                print(f'  DONE! Atomatic variation {j+1} of {len(variations)}')
+                print(f'  DONE! Drawing from randomisation segment {i+1} of {measurement_segmentation-1}')
+                print(f'DONE! with element {name}')
     # clean up
     driver.quit()
 
     print('DONE! Creating synthetic mineral dataset.')
 
-start_time = time.time()
-create_synthetic_dataset()
-# end_time = 
-print(f'Runtime: {time.time() - start_time:.2f} seconds')
+# suppress early interruption stacktrace for convenience
+try:
+    start_time = time.time()
+    create_synthetic_dataset('data/synthetic_minerals.npy', 3, 2)
+except KeyboardInterrupt as e:
+    print('Execution interrupted.')
+    print(f'Runtime: {time.time() - start_time:.2f} seconds')
 
 # todo
-# - add permutations
+# - fix_sum_to_100 before/after calculating variations?
+# - variations: remove elements smaller than 4% with 1:15 chance
 
 # test https://physics.nist.gov/cgi-bin/ASD/lines1.pl?composition=H%3A28.13%3BC%3A0.78%3BNa%3A1.17%3BMg%3A1.48%3BAl%3A3.67%3BSi%3A9.38%3BCa%3A3.52%3BFe%3A2.66%3BO%3A49.209999999999994&mytext%5B%5D=H&myperc%5B%5D=28.13&spectra=H0-2%2CC0-2%2CNa0-2%2CMg0-2%2CAl0-2%2CSi0-2%2CCa0-2%2CFe0-2%2CO0-2&mytext%5B%5D=C&myperc%5B%5D=0.78&mytext%5B%5D=Na&myperc%5B%5D=1.17&mytext%5B%5D=Mg&myperc%5B%5D=1.48&mytext%5B%5D=Al&myperc%5B%5D=3.67&mytext%5B%5D=Si&myperc%5B%5D=9.38&mytext%5B%5D=Ca&myperc%5B%5D=3.52&mytext%5B%5D=Fe&myperc%5B%5D=2.66&mytext%5B%5D=O&myperc%5B%5D=49.209999999999994&low_w=180&limits_type=0&upp_w=960&show_av=2&unit=1&resolution=1000&temp=1&eden=1e17&libs=1
