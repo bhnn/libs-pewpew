@@ -81,5 +81,3 @@ with open('data/synthetic_minerals_raw.csv', newline='') as file:
         final.append((num, name, elements, composition, cls_dict[m_class], grp))
     npy = np.array(final)
     np.save('data/synthetic_minerals', npy)
-
-# <laufende nummer>_<klasse>_<gruppe>_<ausführung>
