@@ -26,13 +26,12 @@ output_path = os.path.join(hh_data, 'pretty_data')
 # information on all minerals
 all_list = np.load(minerals_file, allow_pickle=True)
 # globbed filenames of all .csv files in the data directory and subdirectories
-all_csv = Path(hh_data).rglob('*.[cC][sS][vV]')
 
 for mineral_id, mineral_code in minerals:
     codes = mineral_code.split(' ')
     filepaths = list()
     # iterate over entire directory structure to filter out spectra that belong to the current mineral
-    for f in all_csv:
+    for f in Path(hh_data).rglob('*.[cC][sS][vV]'):
         # filename and codes need lowercase for comparison, e.g. to make finding 'azurit' in 'Azurite' work
         f_str = str(f).lower()
         # ignore these 2 folders
@@ -41,7 +40,7 @@ for mineral_id, mineral_code in minerals:
             for c in codes:
                 if c.lower() in f_str:
                     filepaths.append(f)
-    
+    print('Found', len(filepaths),'spectra for mineral', all_list[mineral_id][1])
     unique_names = list()
     counter = -1
     sorted_by_parent = list()
@@ -88,4 +87,4 @@ for mineral_id, mineral_code in minerals:
                 copy2(str(f), os.path.join(output_path, new_file_name))
                 mineral_counter += 1
             output_counter += 1
-    print('Finished with mineral: ', all_list[mineral_id][1])
+    print('Finished with mineral:', all_list[mineral_id][1])
