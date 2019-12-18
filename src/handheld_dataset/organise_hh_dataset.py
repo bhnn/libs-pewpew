@@ -19,7 +19,7 @@ minerals = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS01
         ]
 
 # file locations
-minerals_file = r'D:\Dropbox\uni\3_semester\ml\libs-pewpew\data\synthetic_minerals_new.npy'
+minerals_file = r'D:\Dropbox\uni\3_semester\ml\libs-pewpew\data\synthetic_minerals.npy'
 hh_data = r'E:/Data/ML Data'
 output_path = os.path.join(hh_data, 'pretty_data')
 
