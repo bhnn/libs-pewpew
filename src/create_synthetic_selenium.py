@@ -237,14 +237,14 @@ def create_synthetic_dataset(data_source_path, measurement_segmentation, amount_
     Main routine to generate synthetic dataset.
     """
     print('BEGIN Create synthetic mineral dataset...')
-    # read in list of all elements and verify integrity
+    # read in list of all elements
     all_minerals = read_mineral_list(data_source_path)
 
     # webdriver for NIST data access, persistent outside of loop to cut down load times of instance creation
     driver = get_webdriver()
     for num, name, elements, composition, m_class, m_group in all_minerals:
         print(f'BEGIN Next element: {name}')
-        # calculate random alterations of electron temperature and density
+        # calculate random alterations of electron temperature and density (measurement noise)
         for i,(t_ev,e_den) in enumerate(calculate_random_segments(measurement_segmentation)):
             # calculate random alterations of composition
             print(f'  BEGIN Draw from randomisation segment {i+1} of {measurement_segmentation-1}')
@@ -265,7 +265,7 @@ def create_synthetic_dataset(data_source_path, measurement_segmentation, amount_
                 data = np.array([data, np.array([m_class, m_group, num])])
                 
                 # <laufende nummer>_<klasse>_<gruppe>_<ausführung> 
-                new_file_name = f'{num:04}_{m_class:02}_{m_group:03}_{i:02}_{j:05}'
+                new_file_name = f'{num:04}_{m_class:03}_{m_group:03}_{i:03}_{j:05}'
                 write_to_file(data, f'results/{new_file_name}')
 
                 # reset webdriver for next iteration
@@ -281,10 +281,12 @@ def create_synthetic_dataset(data_source_path, measurement_segmentation, amount_
 # suppress early interruption stacktrace for convenience
 try:
     start_time = time.time()
-    create_synthetic_dataset('data/synthetic_minerals.npy', 3, 2)
+    create_synthetic_dataset('data/synthetic_minerals.npy', 6, 1000)
 except KeyboardInterrupt as e:
-    print('Execution interrupted.')
-    print(f'Runtime: {time.time() - start_time:.2f} seconds')
+    pass
+
+print('Execution interrupted.')
+print(f'Runtime: {time.time() - start_time:.2f} seconds')
 
 # todo
 # - fix_sum_to_100 before/after calculating variations?
