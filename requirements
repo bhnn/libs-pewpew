@@ -3,3 +3,4 @@ beautifulsoup4
 selenium
 numpy
 requests
+keras-tuner
