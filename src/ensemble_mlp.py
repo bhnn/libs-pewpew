@@ -9,7 +9,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.utils import class_weight
 from tensorflow.keras import regularizers
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import Dense, Dropout, Input, Average
+from tensorflow.keras.layers import Dense, Dropout, Input, Average, Maximum
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam
 
@@ -17,21 +17,21 @@ from tensorflow.keras.utils import plot_model
 
 from utils import normalise_minmax, transform_labels
 
-def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg=regularizers.l2, reg_lambda=0.0001):
+def build_model(id, num_classes, inputs=None, new_input=False, reg_lambda=0.0001):
     with tf.name_scope(f'model_{id}'):
         if new_input:
             inputs = Input(shape=(7810,))
-        net = Dense(512, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
+        net = Dense(512, activation='relu', kernel_regularizer=regularizers.l2(reg_lambda))(inputs)
         net = Dropout(0.5)(net)
-        net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(reg_lambda))(net)
         net = Dropout(0.5)(net)
-        net = Dense(128, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(128, activation='relu', kernel_regularizer=regularizers.l2(reg_lambda))(net)
         net = Dropout(0.5)(net)
-        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(64, activation='relu', kernel_regularizer=regularizers.l2(reg_lambda))(net)
         net = Dropout(0.5)(net)
         net = Dense(num_classes, activation='softmax')(net)
 
-    model = keras.Model(inputs=inputs, outputs=net, name=name)
+    model = keras.Model(inputs=inputs, outputs=net)
     return model
 
 def classify(**args):
@@ -69,7 +69,7 @@ def classify(**args):
     else:
         raise ValueError('Invalid classification target parameter')
     
-    print(f'\n\tTask: Classify «{cls_str}» using «{data_str}»\n')
+    print(f'\n\tTask: Classify «{cls_str}» using «{data_str}» with an «ensemble of MLPs» \n')
 
     # list of "class" names used for confusion matrices and validity testing. Not always classes, also subgroups or minerals
     class_names = [i for i in range(num_classes)]
@@ -89,22 +89,37 @@ def classify(**args):
     train_data = tf.data.Dataset.from_tensor_slices((train_samples_norm, train_labels_onehot)).shuffle(10000).batch(batch_size, drop_remainder=True).repeat(-1)
     test_data  = tf.data.Dataset.from_tensor_slices((test_samples_norm, test_labels_onehot)).batch(batch_size)
 
-    model = build_model(0, num_classes, name='baseline_mlp', new_input=True)
-
-    model.summary()
-
     class_weights = class_weight.compute_class_weight('balanced', class_names, train_labels)
     epoch_steps = train_samples.shape[0] // batch_size
 
-    print('class weights:', class_weights)
+# class weights: [0.503789 1.47479113 0.5920657 1.98873349 1.98873349 0.62365984 0.53289611 1.20418725 1.5526236 2.157185 1.86280932 1.45467462]
+    class_weights = [
+        [10 0.01 0.01 0.01],
+        [0.01 10 0.01 0.01],
+        [0.01 0.01 10 0.01],
+        [0.01 0.01 0.01 10],
+]
+
+    models = list()
+    inputs = Input(shape=(7810,))
+
+    for i in range(4):
+        model = build_model(i, num_classes, inputs=inputs)
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        model.fit(train_data, steps_per_epoch=epoch_steps, epochs=5, verbose=1, class_weight=class_weights[i], use_multiprocessing=True)
+        models.append(model)
+
+    multi_output = [m.outputs[0] for m in models]
+    y = Maximum()(multi_output)
+    model = keras.Model(inputs, outputs=y, name='ensemble')
 
     tb_callback = keras.callbacks.TensorBoard(log_dir='./results', histogram_freq=0, write_graph=True, write_images=True)
 
-    model.compile(optimizer=Adam(learning_rate=0.001, amsgrad=False), loss='categorical_crossentropy', metrics=['accuracy'])
-    model.fit(train_data, steps_per_epoch=epoch_steps, epochs=5, verbose=1, callbacks=[tb_callback], class_weight=class_weights, use_multiprocessing=True)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    # model.fit(train_data, steps_per_epoch=epoch_steps, epochs=5, verbose=1, callbacks=[tb_callback], class_weight=class_weights, use_multiprocessing=True)
     model.evaluate(test_data, verbose=1, use_multiprocessing=True)
 
-    plot_model(model, to_file='img/baseline_mlp.png')
+    plot_model(model, to_file='img/ensemble_mlp.png')
 
     pred = model.predict(test_data, use_multiprocessing=True)
     print(classification_report(y_true=test_labels, y_pred=pred.argmax(axis=1), labels=class_names))

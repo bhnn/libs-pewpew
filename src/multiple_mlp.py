@@ -17,21 +17,21 @@ from tensorflow.keras.utils import plot_model
 
 from utils import normalise_minmax, transform_labels
 
-def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg=regularizers.l2, reg_lambda=0.0001):
+def build_model(id, inputs, num_classes, new_input=False):
     with tf.name_scope(f'model_{id}'):
         if new_input:
             inputs = Input(shape=(7810,))
-        net = Dense(512, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
+        net = Dense(512, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(inputs)
         net = Dropout(0.5)(net)
-        net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(256, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(net)
         net = Dropout(0.5)(net)
-        net = Dense(128, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(net)
         net = Dropout(0.5)(net)
-        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.0001))(net)
         net = Dropout(0.5)(net)
         net = Dense(num_classes, activation='softmax')(net)
 
-    model = keras.Model(inputs=inputs, outputs=net, name=name)
+    model = keras.Model(inputs=inputs, outputs=net)
     return model
 
 def classify(**args):
@@ -69,7 +69,7 @@ def classify(**args):
     else:
         raise ValueError('Invalid classification target parameter')
     
-    print(f'\n\tTask: Classify «{cls_str}» using «{data_str}»\n')
+    print(f'\n\tTask: Classify «{cls_str}» using «{data_str}» with «multiple MLPs»\n')
 
     # list of "class" names used for confusion matrices and validity testing. Not always classes, also subgroups or minerals
     class_names = [i for i in range(num_classes)]
@@ -89,14 +89,15 @@ def classify(**args):
     train_data = tf.data.Dataset.from_tensor_slices((train_samples_norm, train_labels_onehot)).shuffle(10000).batch(batch_size, drop_remainder=True).repeat(-1)
     test_data  = tf.data.Dataset.from_tensor_slices((test_samples_norm, test_labels_onehot)).batch(batch_size)
 
-    model = build_model(0, num_classes, name='baseline_mlp', new_input=True)
+    inputs = Input(shape=(7810,))
+    models = [build_model(i, inputs, num_classes) for i in range(3)]
 
-    model.summary()
+    multi_output = [m.outputs[0] for m in models]
+    y = Average()(multi_output)
+    model = keras.Model(inputs, outputs=y, name='ensemble')
 
     class_weights = class_weight.compute_class_weight('balanced', class_names, train_labels)
     epoch_steps = train_samples.shape[0] // batch_size
-
-    print('class weights:', class_weights)
 
     tb_callback = keras.callbacks.TensorBoard(log_dir='./results', histogram_freq=0, write_graph=True, write_images=True)
 
@@ -104,7 +105,7 @@ def classify(**args):
     model.fit(train_data, steps_per_epoch=epoch_steps, epochs=5, verbose=1, callbacks=[tb_callback], class_weight=class_weights, use_multiprocessing=True)
     model.evaluate(test_data, verbose=1, use_multiprocessing=True)
 
-    plot_model(model, to_file='img/baseline_mlp.png')
+    plot_model(model, to_file='multiple_mlp.png')
 
     pred = model.predict(test_data, use_multiprocessing=True)
     print(classification_report(y_true=test_labels, y_pred=pred.argmax(axis=1), labels=class_names))
