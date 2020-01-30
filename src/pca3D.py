@@ -16,12 +16,12 @@ train_labels = transform_labels(train_labels, cell=0)
 test_labels = transform_labels(test_labels, cell=0)
 
 pca = PCA(n_components=3)
-principalComponents = pca.fit_transform(train_samples_norm) #data in form of num_samples, num_features 
+principalComponents = pca.fit_transform(train_samples_norm)
 
 principalDf = pd.DataFrame(data = principalComponents
              , columns = ['principal component 1', 'principal component 2', 'principal component 3'])
 
-df_targets = pd.DataFrame({'targets': train_labels[:,0].astype(int)}) # add labels 
+df_targets = pd.DataFrame({'targets': train_labels[:,0].astype(int)})
 
 finalDf = pd.concat([principalDf, df_targets], axis = 1)
 
@@ -39,13 +39,11 @@ y = train_labels[:,0].astype(int)
 # sulfides      - 26, 98, 19
 
 for name,label,color in [('Carbonates', 0, 'r'), ('Oxides', 1, 'g'), ('Phosphates', 2, 'b'), ('Sulfides', 3, 'y')]:
-    ax.text3D(X[y == label, 0].mean(),
-              X[y == label, 1].mean() + 1.5,
-              X[y == label, 2].mean(), name,
-              horizontalalignment='center',
-              bbox=dict(alpha=.5, edgecolor='w', facecolor='w'))
-    if label != 1:
-        continue
+    # ax.text3D(X[y == label, 0].mean(),
+    #           X[y == label, 1].mean() + 1.5,
+    #           X[y == label, 2].mean(), name,
+    #           horizontalalignment='center',
+    #           bbox=dict(alpha=.5, edgecolor='w', facecolor='w'))
     ax.scatter(X[y == label, 0], X[y == label, 1], X[y == label, 2], c=color, cmap='Spectral',
            edgecolor='k', alpha=0.4)
 
