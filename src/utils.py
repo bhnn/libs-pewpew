@@ -1,6 +1,9 @@
 import numpy as np
-from keras.utils import to_categorical
 import tensorflow as tf
+import tensorflow.keras as keras
+from keras.utils import to_categorical
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Dense, Dropout, Input
 
 # transform full mineral label of 0-108 to 0-11 for reduced dataset
 reduced_labels_classes = {
@@ -105,3 +108,47 @@ def set_classification_targets(cls_choice):
     else:
         raise ValueError('Invalid classification target parameter')
     return num_classes, cls_target, cls_str
+
+def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg=regularizers.l2, reg_lambda=0.0001):
+    model_name = name if name else f'model_{id}'
+    with tf.name_scope(model_name):
+        if new_input:
+            inputs = Input(shape=(7810,))
+        net = Dense(512, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
+        net = Dropout(0.5)(net)
+        net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dropout(0.5)(net)
+        net = Dense(128, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dropout(0.5)(net)
+        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dropout(0.5)(net)
+        net = Dense(num_classes, activation='softmax')(net)
+
+    model = keras.Model(inputs=inputs, outputs=net, name=name)
+    return model
+
+def build_model_concat(id, num_classes, inputs=None, new_input=False, concat_model=None, reg=regularizers.l2, reg_lambda=0.0001):
+    model_name = name if name else f'model_{id}'
+    with tf.name_scope(model_name):
+        if new_input:
+            inputs = Input(shape=(7810,))
+        if concat_model:
+            inputs = Concatenate()([concat_model.inputs[0], concat_model.layers[-2].output])
+        net = Dense(512, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
+        net = Dropout(0.5)(net)
+        net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dropout(0.5)(net)
+        net = Dense(128, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dropout(0.5)(net)
+        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dropout(0.5)(net)
+        if not concat_model:
+            net = Dense(7810, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+            net = Dropout(0.5)(net)
+        net = Dense(num_classes, activation='softmax')(net)
+
+    if not concat_model:
+        model = keras.Model(inputs=inputs, outputs=net)
+    else:
+        model = keras.Model(inputs=concat_model.inputs[0], outputs=net)
+    return model

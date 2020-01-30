@@ -3,16 +3,14 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
-import tensorflow as tf
-import tensorflow.keras as keras
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.utils import class_weight
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
 
 from utils import build_model, prepare_dataset, set_classification_targets
+
 
 def classify(**args):
     batch_size = 64
@@ -34,7 +32,7 @@ def classify(**args):
     plot_model(model, to_file='img/baseline_mlp.png')
 
     # callback to log data for TensorBoard
-    tb_callback = keras.callbacks.TensorBoard(log_dir='./results', histogram_freq=0, write_graph=True, write_images=True)
+    tb_callback = TensorBoard(log_dir='./results', histogram_freq=0, write_graph=True, write_images=True)
 
     # train and evaluate
     model.fit(train_data, steps_per_epoch=epoch_steps, epochs=5, verbose=1, callbacks=[tb_callback], class_weight=class_weights, use_multiprocessing=True)
