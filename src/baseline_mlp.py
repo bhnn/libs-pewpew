@@ -15,7 +15,6 @@ from utils import build_model, prepare_dataset, set_classification_targets
 def classify(**args):
     batch_size = 64
     # determine classification targets and parameters to construct datasets properly
-    print(args)
     num_classes, cls_target, cls_str = set_classification_targets(args['cls_choice'])
     train_data, test_data, train_labels, test_labels, epoch_steps, data_str = prepare_dataset(args['dataset_choice'], cls_target, num_classes, batch_size)
 
