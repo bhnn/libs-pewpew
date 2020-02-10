@@ -1,8 +1,7 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras as keras
 from keras.utils import to_categorical
-from tensorflow.keras import regularizers
+from tensorflow.keras import regularizers, Model
 from tensorflow.keras.layers import Dense, Dropout, Input
 
 # transform full mineral label of 0-108 to 0-11 for reduced dataset
@@ -92,6 +91,50 @@ def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64):
 
     return train_data, test_data, train_labels, test_labels, epoch_steps, data_str
 
+def prepare_dataset_mixture(targets, num_classes, influence, batch_size=64):
+    train_samples_hh, train_labels_hh, test_samples_hh, test_labels_hh = np.load('/home/ben/Desktop/ML/pretty_data/final.npy', allow_pickle=True)
+    train_samples_syn, train_labels_syn, test_samples_syn, test_labels_syn = np.load('/home/ben/Desktop/ML/synthetic_data/final.npy', allow_pickle=True)
+
+    hh_counts = dict(zip(*np.unique(train_labels_hh[:,targets].astype(int), return_counts=True)))
+    syn_counts = dict(zip(*np.unique(train_labels_syn[:,targets].astype(int), return_counts=True)))
+
+    for (hhl,hhc),(_,sync) in zip(hh_counts.items(), syn_counts.items()):
+        n = int(hhc * influence)
+        if n > sync:
+            print(f'Warning: Requested amount of data ({n}) for label {hhl} is larger than synthetic data for this label ({sync})')
+        indices = (train_labels_syn[:,targets].astype(int) == hhl)
+        train_samples_hh = np.vstack((train_samples_hh, train_samples_syn[indices][:n]))
+        train_labels_hh = np.vstack((train_labels_hh, train_labels_syn[indices][:n]))
+
+    # test new dataset consistency
+    # hh_counts_post = dict(zip(*np.unique(train_labels_hh[:,targets].astype(int), return_counts=True)))
+    # syn_counts_post = dict(zip(*np.unique(train_labels_syn[:,targets].astype(int), return_counts=True)))
+    # for (hhl1,hhc1),(hhl2,hhc2) in zip(hh_counts_post.items(), hh_counts.items()):
+    #     print(f'label: {hhl1}, before: {hhc2}, after: {hhc1}, diff: {hhc1-hhc2}')
+
+    # normalise each sample with its own np.max
+    train_samples_norm = normalise_minmax(train_samples_hh)
+    test_samples_norm = normalise_minmax(test_samples_hh)
+    # create onehot vectors out of labels
+    train_labels = transform_labels(train_labels_hh, cell=targets)
+    test_labels = transform_labels(test_labels_hh, cell=targets)
+    train_labels = train_labels_hh[:,targets].astype(int)
+    test_labels = test_labels_hh[:,targets].astype(int)
+    train_labels_onehot = to_categorical(train_labels, num_classes)
+    test_labels_onehot = to_categorical(test_labels, num_classes)
+    # use Dataset as input pipeline
+    train_data = tf.data.Dataset.from_tensor_slices((train_samples_norm, train_labels_onehot)).shuffle(10000).batch(batch_size, drop_remainder=True).repeat(-1)
+    test_data  = tf.data.Dataset.from_tensor_slices((test_samples_norm, test_labels_onehot)).batch(batch_size)
+
+    # class distribution
+    class_counts = dict(zip(*np.unique(train_labels, return_counts=True)))
+    print('current class distribution: ', class_counts)
+
+    epoch_steps = train_samples_norm.shape[0] // batch_size
+    data_str = f'handheld data augmented with {influence*100}% synthetic data'
+
+    return train_data, test_data, train_labels, test_labels, epoch_steps, data_str
+
 def set_classification_targets(cls_choice):
     if cls_choice == 0:
         num_classes = 4
@@ -114,17 +157,15 @@ def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg
     with tf.name_scope(model_name):
         if new_input:
             inputs = Input(shape=(7810,))
-        net = Dense(512, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
+        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
         net = Dropout(0.5)(net)
         net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
         net = Dropout(0.5)(net)
-        net = Dense(128, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
-        net = Dropout(0.5)(net)
-        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
-        net = Dropout(0.5)(net)
+        net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        # net = Dropout(0.5)(net)
         net = Dense(num_classes, activation='softmax')(net)
 
-    model = keras.Model(inputs=inputs, outputs=net, name=name)
+    model = Model(inputs=inputs, outputs=net, name=model_name)
     return model
 
 def build_model_concat(id, num_classes, inputs=None, new_input=False, concat_model=None, reg=regularizers.l2, reg_lambda=0.0001):
@@ -134,21 +175,19 @@ def build_model_concat(id, num_classes, inputs=None, new_input=False, concat_mod
             inputs = Input(shape=(7810,))
         if concat_model:
             inputs = Concatenate()([concat_model.inputs[0], concat_model.layers[-2].output])
-        net = Dense(512, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
+        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(inputs)
         net = Dropout(0.5)(net)
         net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
         net = Dropout(0.5)(net)
-        net = Dense(128, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
-        net = Dropout(0.5)(net)
-        net = Dense(64, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
+        net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
         net = Dropout(0.5)(net)
         if not concat_model:
             net = Dense(7810, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
-            net = Dropout(0.5)(net)
+            # net = Dropout(0.5)(net)
         net = Dense(num_classes, activation='softmax')(net)
 
     if not concat_model:
-        model = keras.Model(inputs=inputs, outputs=net)
+        model = Model(inputs=inputs, outputs=net, name=model_name)
     else:
-        model = keras.Model(inputs=concat_model.inputs[0], outputs=net)
+        model = Model(inputs=concat_model.inputs[0], outputs=net, name=model_name)
     return model
