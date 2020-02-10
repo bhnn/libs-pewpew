@@ -55,7 +55,7 @@ def transform_labels(label_data, cell=2):
             label_data[i][cell] = reduced_labels_minerals[label_data[i][cell]]
     return label_data
 
-def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64):
+def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64, return_tf_dataset=True):
     if dataset_choice == 0:
         train_samples, train_labels, test_samples, test_labels = np.load('/home/ben/Desktop/ML/synthetic_data/final.npy', allow_pickle=True)
         data_str = 'synthetic data'
@@ -83,15 +83,18 @@ def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64):
     test_labels = test_labels[:,targets].astype(int)
     train_labels_onehot = to_categorical(train_labels, num_classes)
     test_labels_onehot = to_categorical(test_labels, num_classes)
-    # use Dataset as input pipeline
-    train_data = tf.data.Dataset.from_tensor_slices((train_samples_norm, train_labels_onehot)).shuffle(10000).batch(batch_size, drop_remainder=True).repeat(-1)
-    test_data  = tf.data.Dataset.from_tensor_slices((test_samples_norm, test_labels_onehot)).batch(batch_size)
 
     epoch_steps = train_samples.shape[0] // batch_size
 
-    return train_data, test_data, train_labels, test_labels, epoch_steps, data_str
+    if not return_tf_dataset:
+        return train_samples_norm, test_samples_norm, train_labels, test_labels, epoch_steps, data_str
+    else:
+        # use Dataset as input pipeline
+        train_data = tf.data.Dataset.from_tensor_slices((train_samples_norm, train_labels_onehot)).shuffle(10000).batch(batch_size, drop_remainder=True).repeat(-1)
+        test_data  = tf.data.Dataset.from_tensor_slices((test_samples_norm, test_labels_onehot)).batch(batch_size)
+        return train_data, test_data, train_labels, test_labels, epoch_steps, data_str
 
-def prepare_dataset_mixture(targets, num_classes, influence, batch_size=64):
+def prepare_dataset_mixture(targets, num_classes, mixture, batch_size=64):
     train_samples_hh, train_labels_hh, test_samples_hh, test_labels_hh = np.load('/home/ben/Desktop/ML/pretty_data/final.npy', allow_pickle=True)
     train_samples_syn, train_labels_syn, test_samples_syn, test_labels_syn = np.load('/home/ben/Desktop/ML/synthetic_data/final.npy', allow_pickle=True)
 
@@ -99,7 +102,7 @@ def prepare_dataset_mixture(targets, num_classes, influence, batch_size=64):
     syn_counts = dict(zip(*np.unique(train_labels_syn[:,targets].astype(int), return_counts=True)))
 
     for (hhl,hhc),(_,sync) in zip(hh_counts.items(), syn_counts.items()):
-        n = int(hhc * influence)
+        n = int(hhc * mixture)
         if n > sync:
             print(f'Warning: Requested amount of data ({n}) for label {hhl} is larger than synthetic data for this label ({sync})')
         indices = (train_labels_syn[:,targets].astype(int) == hhl)
