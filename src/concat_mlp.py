@@ -39,6 +39,8 @@ def classify(**args):
     model.fit(train_data, steps_per_epoch=epoch_steps, epochs=5, verbose=1, class_weight=class_weights, use_multiprocessing=True)
     model.evaluate(test_data, verbose=1, use_multiprocessing=True)
 
+    del train_data, test_data, train_labels, test_labels
+
     # load handheld dataset for evaluation
     num_classes, cls_target, cls_str = set_classification_targets(args['cls_choice'])
     train_data_hh, test_data_hh, train_labels_hh, test_labels_hh, epoch_steps_hh, data_str = prepare_dataset(1, cls_target, num_classes, batch_size)
@@ -75,12 +77,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     classify(**vars(args))
-
-# class_names =           [0,   1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11]
-# actual_class_names =    [11, 19, 26, 28, 35, 41, 73, 80, 86, 88, 97, 98]
-# carbonates    - 11, 73, 88
-# oxides        - 41, 28, 97
-# phosphates    - 80, 86, 35
-# sulfides      - 26, 98, 19
-
-# todo - mit Callback Early Stopping so lang laufen lassen, bis Val-Acc nach 10 Epochen nicht mehr sinkt
