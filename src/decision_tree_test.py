@@ -2,10 +2,12 @@ import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pydotplus
 import seaborn as sn
+from sklearn.externals.six import StringIO
 from sklearn.metrics import (balanced_accuracy_score, classification_report,
                              confusion_matrix)
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from sklearn.utils import class_weight
 
 from utils import build_model, prepare_dataset, set_classification_targets
@@ -40,10 +42,6 @@ def classify(**args):
     pred = model.predict(test_data)
     print('Balanced accuracy score: ', balanced_accuracy_score(y_true=test_labels, y_pred=pred))
     print(classification_report(y_true=test_labels, y_pred=pred, labels=class_names))
-
-    from sklearn.externals.six import StringIO
-    from sklearn.tree import export_graphviz
-    import pydotplus
 
     # visualise decision tree, from datacamp.com/community/tutorials/decision-tree-classification-python
     dot_data = StringIO()
