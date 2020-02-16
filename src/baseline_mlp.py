@@ -11,7 +11,6 @@ from tensorflow.keras.utils import plot_model
 
 from utils import build_model, prepare_dataset, set_classification_targets
 
-
 def classify(**args):
     batch_size = 64
     # determine classification targets and parameters to construct datasets properly
