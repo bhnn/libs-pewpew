@@ -1,0 +1,41 @@
+classes: 
+borates and nitrates 0
+carbonates 1
+halides 2
+oxides 3
+phosphates, arsenates and vanadates 4
+quartz and silicates 5
+sulfides 6
+sulphates, chromates, molybdates and wolframates 7
+
+subgroups:
+pyrrhotine-pentlandite 0
+tetrahedrite-bournonite-boulangerite 1
+alaun-chalkantite 2
+argentite 3
+cerussite-malachite-hydrozinkite 4
+chalcopyrite-bornite 5
+chalcosite 6
+chlorargyrite-atacamite 7
+colemanite-uralborite 8
+cuprite-zinkite-tenorite 9
+epidote-vesuvianite 10
+hemimorphite 11
+kaolinite-montmorillonite 12
+krokoite-wulfenite-scheelite 13
+proustite-stephanite 14
+pyromorphite-adamine 15
+salpeter 16
+torbernite-carnotite-annabergite 17
+turquoise-olivenite 18
+uraninite-ianthinite 19
+zeolite 20
+zzz_placeholder_aerinite 21
+zzz_placeholder_arsentsumebite 22
+zzz_placeholder_claraite 23
+zzz_placeholder_creaseyite 24
+zzz_placeholder_nakauriite 25
+zzz_placeholder_richelsdorfite 26
+zzz_placeholder_schulenbergite 27
+zzz_placeholder_woodwardite 28
+
