@@ -1,7 +1,10 @@
+from glob import glob
+
 import numpy as np
 import tensorflow as tf
 from keras.utils import to_categorical
-from tensorflow.keras import regularizers, Model
+from sklearn.utils import shuffle
+from tensorflow.keras import Model, regularizers
 from tensorflow.keras.layers import Dense, Dropout, Input
 
 # transform full mineral label of 0-108 to 0-11 for reduced dataset
@@ -33,9 +36,9 @@ reduced_labels_minerals = {
     98: 11,
 }
 
+# adapted from Federico
 def normalise_minmax(np_data):
     result = np.zeros((np_data.shape[0], np_data.shape[1]))
-
     for i in range(np_data.shape[0]):
         if np.max(np_data[i,:]) > 0:
             result[i] = np_data[i][:,1] / np.max(np_data[i][:,1])
@@ -55,7 +58,30 @@ def transform_labels(label_data, cell=2):
             label_data[i][cell] = reduced_labels_minerals[label_data[i][cell]]
     return label_data
 
-def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64, return_tf_dataset=True):
+def has_sufficient_copper(spectrum, amount_t=0.5, drop_t=0.3):
+    """
+    Checks individual spectras for their copper content. If more than *amount_t*% of copper lines are below the *drop_t*
+    percentile, then the spectrum more likely captures matrix rock.
+    Parameters:
+        spectrum (ndarray):     numpy array containing the spectrum
+        amount_t (float):       threshold (%) of copper lines expected to have high intensity
+        drop_t   (float):       threshold (%) signifying "low" copper intensity
+    
+    Returns:
+        *True* if the spectrum contains more than the specified amount of copper, *False* otherwise
+    """
+    # lookup for position of wavelength in input data
+    copper_lines_indices = [int(round(cpl - 180, 1) * 10) for cpl in [219.25, 224.26, 224.7, 324.75, 327.4, 465.1124, 510.55, 515.32, 521.82]]
+    low_copper_sum = 0
+    for cli in copper_lines_indices:
+        # find position in data from wavelength. 219.25 -> 219.2 -> 39.2 -> data[392] == [219.2, ...]
+        if spectrum[cli] < drop_t:
+            low_copper_sum += 1
+        if (low_copper_sum / len(copper_lines_indices)) > amount_t:
+            return False
+    return True
+
+def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64, return_tf_dataset=True, amount_t=None, drop_t=None):
     if dataset_choice == 0:
         train_samples, train_labels, test_samples, test_labels = np.load('/home/ben/Desktop/ML/synthetic_data/final.npy', allow_pickle=True)
         data_str = 'synthetic data'
@@ -76,6 +102,20 @@ def prepare_dataset(dataset_choice, targets, num_classes, batch_size=64, return_
     # normalise each sample with its own np.max
     train_samples_norm = normalise_minmax(train_samples)
     test_samples_norm = normalise_minmax(test_samples)
+
+    # check for copper content if possible, discard any elements that have too little copper
+    if amount_t and drop_t:
+        train_logical_indices = [has_sufficient_copper(s, amount_t, drop_t) for s in train_samples_norm]
+        test_logical_indices = [has_sufficient_copper(s, amount_t, drop_t) for s in test_samples_norm]
+        # discard by using logical access to grab relevant array elements
+        train_samples_norm = train_samples_norm[train_logical_indices]
+        test_samples_norm = test_samples_norm[test_logical_indices]
+        train_labels = train_labels[train_logical_indices]
+        test_labels = test_labels[test_logical_indices]
+        num_total = (len(train_samples) + len(test_samples))
+        num_dropout = (len(train_samples_norm) + len(test_samples_norm)) / num_total
+        print(f'\na:{amount_t} d:{drop_t} :: {num_dropout} of {num_total}')
+
     # create onehot vectors out of labels
     train_labels = transform_labels(train_labels, cell=targets)
     test_labels = transform_labels(test_labels, cell=targets)
@@ -134,7 +174,7 @@ def prepare_dataset_mixture(targets, num_classes, mixture, batch_size=64):
     print('current class distribution: ', class_counts)
 
     epoch_steps = train_samples_norm.shape[0] // batch_size
-    data_str = f'handheld data augmented with {influence*100}% synthetic data'
+    data_str = f'handheld data augmented with {mixture*100}% synthetic data'
 
     return train_data, test_data, train_labels, test_labels, epoch_steps, data_str
 
