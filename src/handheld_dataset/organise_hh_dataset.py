@@ -20,8 +20,8 @@ minerals = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS01
 
 # file locations
 minerals_file = r'D:\Dropbox\uni\3_semester\ml\libs-pewpew\data\synthetic_minerals.npy'
-hh_data = r'E:/Data/ML Data'
-output_path = os.path.join(hh_data, 'pretty_data')
+hh_data = r'E:\Data\LIBSqORE'
+output_path = os.path.join(hh_data, 'paul_data')
 
 # information on all minerals
 all_list = np.load(minerals_file, allow_pickle=True)
@@ -52,8 +52,7 @@ for mineral_id, mineral_code in minerals:
             unique_names.append(f.parent)
             counter += 1
             sorted_by_parent.append(list())
-        else:
-            sorted_by_parent[counter].append(f)
+        sorted_by_parent[counter].append(f)
     
     mineral_class = all_list[mineral_id][4]
     mineral_subgroup = all_list[mineral_id][5]
@@ -76,15 +75,16 @@ for mineral_id, mineral_code in minerals:
             logfile.write(log_entry)
 
             # go through list of .csv files and copy them to output directory with a new name:
-            # {mineral_id}_{mineral_class}_{mineral_subgroup}_{index of original directory}_{running index}.csv
+            # {mineral_id}_{mineral_class}_{mineral_subgroup}_{index of original directory}_{shot id}.csv
             mineral_counter = 0
             for f in directory:
+                # use original id to preserve integrity of data for later
+                shot_id = int(f.name[5:-5])
                 new_file_name = '{:04}_{:03}_{:03}_{:03}_{:05}.csv'.format( mineral_id, 
                                                                             mineral_class, 
                                                                             mineral_subgroup, 
                                                                             output_counter, 
-                                                                            mineral_counter)
+                                                                            shot_id)
                 copy2(str(f), os.path.join(output_path, new_file_name))
-                mineral_counter += 1
             output_counter += 1
     print('Finished with mineral:', all_list[mineral_id][1])
