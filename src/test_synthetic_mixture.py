@@ -59,5 +59,3 @@ if __name__ == '__main__':
 # oxides        - 41, 28, 97
 # phosphates    - 80, 86, 35
 # sulfides      - 26, 98, 19
-
-# todo - mit Callback Early Stopping so lang laufen lassen, bis Val-Acc nach 10 Epochen nicht mehr sinkt
