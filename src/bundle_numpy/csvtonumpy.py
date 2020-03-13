@@ -27,21 +27,21 @@ def convert_to_numpy(datasetname):
         else:
             os.remove(f)
 
-convert_to_numpy(datasetname='pia_data')
-convert_to_numpy(datasetname='paul_data')
-convert_to_numpy(datasetname='subset_data')
+convert_to_numpy(datasetname='hh_all')
+convert_to_numpy(datasetname='hh_6')
+convert_to_numpy(datasetname='hh_12')
 
 
-minerals_paul = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'), # azurite
+minerals_6 = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'), # azurite
                  (22, 'LIBS023 LIBS025 LIBS027 LIBS183'),
                  (26, 'LIBS028 LIBS029 LIBS030 LIBS031 LIBS032 LIBS033 LIBS034 LIBS035 LIBS036 LIBS037 LIBS038 LIBS039'), # chalcopyrite
                  (30, 'LIBS041'),
                  (73, 'LIBS059 LIBS060 LIBS061 LIBS062 LIBS063 LIBS064 LIBS065 LIBS066 LIBS067 LIBS068 LIBS069 LIBS070 LIBS071 LIBS072 LIBS073 LIBS074 LIBS075'), # malachite
                  (98, 'tetrahedr LIBS088 LIBS089'), # tetrahedrite
                  ]
-minerals_paul_id = [a_tuple[0] for a_tuple in minerals_paul]
+minerals_6_id = [a_tuple[0] for a_tuple in minerals_6]
 
-minerals_subset = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'), # azurite
+minerals_12 = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'), # azurite
             (26, 'LIBS028 LIBS029 LIBS030 LIBS031 LIBS032 LIBS033 LIBS034 LIBS035 LIBS036 LIBS037 LIBS038 LIBS039'), # chalcopyrite
             (41, 'cupri LIBS044 LIBS045 LIBS046 LIBS047 LIBS048 LIBS049 LIBS051 LIBS198 LIBS199 LIBS200 LIBS201 LIBS202 LIBS203'), # cuprite
             (73, 'LIBS059 LIBS060 LIBS061 LIBS062 LIBS063 LIBS064 LIBS065 LIBS066 LIBS067 LIBS068 LIBS069 LIBS070 LIBS071 LIBS072 LIBS073 LIBS074 LIBS075'), # malachite
@@ -54,9 +54,9 @@ minerals_subset = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011
             (86, 'pseudomalachi LIBS081 LIBS082 LIBS175'), # pseudomalachite
             (35, 'corneti LIBS139') # cornetite
             ]
-minerals_subset_id = [a_tuple[0] for a_tuple in minerals_subset]
+minerals_12_id = [a_tuple[0] for a_tuple in minerals_12]
 
-minerals_pia = [(1, 'LIBS105'), (2, 'LIBS005 LIBS119'), (3, 'LIBS103'), (4, 'LIBS121'), (5, 'LIBS148'), (6, 'LIBS107'), (7, 'LIBS101'), (8, 'LIBS104'), (9, 'LIBS106'), (10, 'LIBS166'),
+minerals_all = [(1, 'LIBS105'), (2, 'LIBS005 LIBS119'), (3, 'LIBS103'), (4, 'LIBS121'), (5, 'LIBS148'), (6, 'LIBS107'), (7, 'LIBS101'), (8, 'LIBS104'), (9, 'LIBS106'), (10, 'LIBS166'),
             (11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'),
             (12, 'LIBS143'), (13, 'LIBS123'), (14, 'LIBS168'), (15, 'LIBS120'), (16, 'LIBS140'), (17, 'LIBS154'), (18, 'LIBS125'), (19, 'borni LIBS021 LIBS144'),  (20, 'LIBS170'),
             (21, 'LIBS022 LIBS164'), (22, 'LIBS023 LIBS025 LIBS027 LIBS183'), (23, 'LIBS117'), (24, 'LIBS137'),
@@ -73,7 +73,7 @@ minerals_pia = [(1, 'LIBS105'), (2, 'LIBS005 LIBS119'), (3, 'LIBS103'), (4, 'LIB
             (88, 'rosasi LIBS192'),  (89, 'LIBS096'), (90, 'LIBS084 LIBS134'), (91, 'LIBS131'), (92, 'LIBS085 LIBS086 LIBS100 LIBS100'), (94, 'LIBS149'), (95, 'LIBS087'),
             (96, 'LIBS169'), (97, 'tenori LIBS155'), (98, 'tetrahedr LIBS088 LIBS089'),  (99, 'LIBS102'), (100, 'LIBS091'), (101, 'LIBS184'), (102, 'LIBS181'), (103, 'LIBS124'), (104, 'LIBS092 LIBS147'), (105, 'LIBS129'), (106, 'LIBS098'), (107, 'LIBS093')
         ]
-minerals_pia_id = [a_tuple[0] for a_tuple in minerals_pia]
+minerals_all_id = [a_tuple[0] for a_tuple in minerals_all]
 
 def train_test_split(datasetname, dataset_id):
 
@@ -106,6 +106,6 @@ def train_test_split(datasetname, dataset_id):
                 shutil.move(f, os.path.join(path, 'train_data'))
 
 
-train_test_split('paul_data', minerals_paul_id)
-train_test_split('pia_data', minerals_pia_id)
-train_test_split('subset_data', minerals_subset_id)
+train_test_split('hh_all', minerals_all_id)
+train_test_split('hh_6', minerals_6_id)
+train_test_split('hh_12', minerals_12_id)
