@@ -81,7 +81,7 @@ def train_test_split(datasetname, dataset_id):
 
     for m_id in tqdm(dataset_id, desc=datasetname):
         m_id = '{0:04d}'.format(m_id)
-        files = sorted(glob.glob(os.path.join(path, m_id+'*.npy')))
+        files = sorted(glob.glob(os.path.join(path, m_id+'*.npz')))
         max_mp = int(files[-1][-13:-10])+1 # max measure points, plus 1 because it starts counting from 0
 
         for f in tqdm(files, leave=False):
