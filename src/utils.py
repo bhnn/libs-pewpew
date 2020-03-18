@@ -5,7 +5,7 @@ import tensorflow as tf
 from keras.utils import to_categorical
 from sklearn.utils import shuffle
 from tensorflow.keras import Model, regularizers
-from tensorflow.keras.layers import Dense, Dropout, Input
+from tensorflow.keras.layers import Dense, Dropout, Input, Concatenate
 
 # transform full mineral label of 0-108 to 0-11 for reduced dataset
 reduced_labels_classes = {
@@ -212,7 +212,7 @@ def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg
     return model
 
 def build_model_concat(id, num_classes, inputs=None, new_input=False, concat_model=None, reg=regularizers.l2, reg_lambda=0.0001):
-    model_name = name if name else f'model_{id}'
+    model_name = f'model_{id}'
     with tf.name_scope(model_name):
         if new_input:
             inputs = Input(shape=(7810,))
