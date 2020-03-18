@@ -50,6 +50,17 @@ def normalise_minmax(sample):
         sample = np.zeros(sample.shape[0])
     return sample
 
+def diagnose_output(y_true, y_pred, class_names):
+    print(classification_report(y_true, y_pred.argmax(axis=1), labels=class_names))
+
+    # normalised confusion matrix
+    matrix = confusion_matrix(y_true, y_pred.argmax(axis=1), labels=class_names)
+    matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
+
+    plt.figure(figsize = (10,7))
+    sn.heatmap(matrix, annot=True, fmt='.2f')
+    plt.show()
+
 def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffle_and_repeat):
     i = 0
     run = True
@@ -67,7 +78,7 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
                     files = shuffle(files)
                 else:
                     run = False
-                    samples, labels = samples[:j-1], labels[:j-1]
+                    samples, labels = samples[:j], labels[:j]
                     break
 
             # load data, all:(data:(7810, 2), labels:(3,))
@@ -99,37 +110,23 @@ def prepare_dataset_test(dataset_choice, targets, batch_size):
     test_data    = sorted(glob(join(data_path, 'test', '*.npz')))
     test_labels  = __get_labels(test_data, targets)
 
-    num_classes = len(np.unique(train_labels))
-    trans_dict  = get_transformation_dict(train_labels)
+    num_classes  = len(np.unique(train_labels))
+    trans_dict   = get_transformation_dict(train_labels)
     train_labels = transform_labels(train_labels, trans_dict)
     test_labels  = transform_labels(test_labels, trans_dict)
 
     train_gen = __data_generator(train_data, targets, num_classes, batch_size, trans_dict, True)
+    eval_gen  = __data_generator(test_data, targets, num_classes, batch_size, trans_dict, False)
     test_gen  = __data_generator(test_data, targets, num_classes, batch_size, trans_dict, False)
 
-    # for d0, d1 in train_gen:
-    #     print(d1)
-    #     with np.load(path) as npz:
-    #         t0 = npz['data']
-    #         t1 = npz['labels']
-    #     assert d0 == t0, 'sample wrong'
-    #     assert d1 == t1, 'label wrong'
-
-    # t0 = np.array([normalise_minmax(npz['data']) for npz in [np.load(f) for f in test_data[:64]]])
-    # t1 = np.array([to_categorical(transform_labels(npz['labels'], trans_dict), num_classes) for npz in [np.load(f) for f in test_data[:64]]])
-    # for d0,d1 in test_gen:
-    #     print(np.count_nonzero(d0[0]))
-    #     print(np.count_nonzero(t0[0]))
-    #     break
-
-    epoch_steps = (len(train_labels) // batch_size, len(test_labels) // batch_size)
-    return train_gen, test_gen, train_labels, test_labels, epoch_steps, num_classes, data_str
+    epoch_steps = (len(train_labels) // batch_size, (len(test_labels) // batch_size)+1)
+    return train_gen, eval_gen, test_gen, train_labels, test_labels, epoch_steps, num_classes, data_str
 
 def classify(**args):
     batch_size = 64
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
-    train_data, test_data, train_labels, test_labels, epoch_steps, num_classes, data_str = prepare_dataset_test(args['dataset_choice'], cls_target, batch_size)
+    train_data, eval_data, test_data, train_labels, test_labels, epoch_steps, num_classes, data_str = prepare_dataset_test(args['dataset_choice'], cls_target, batch_size)
 
     # list of "class" names used for confusion matrices and validity testing. Not always classes, also subgroups or minerals
     class_names = [i for i in range(num_classes)]
@@ -143,24 +140,13 @@ def classify(**args):
     model.compile(optimizer=Adam(learning_rate=0.001, amsgrad=False), loss='categorical_crossentropy', metrics=['accuracy'])
 
     # train and evaluate
-    model.fit(train_data, steps_per_epoch=epoch_steps[0], epochs=5, verbose=1, class_weight=weight_dict, use_multiprocessing=False)
-    model.evaluate(test_data, steps=epoch_steps[1]+1, verbose=1, use_multiprocessing=False)
-
-    sys.exit(1)
+    model.fit(train_data, steps_per_epoch=epoch_steps[0], epochs=args['epochs'], verbose=1, class_weight=weight_dict, use_multiprocessing=False)
+    model.evaluate(eval_data, steps=epoch_steps[1], verbose=1, use_multiprocessing=False)
 
     # predict on testset and calculate classification report and confusion matrix for diagnosis
     pred = model.predict(test_data, use_multiprocessing=False)
-    print(pred.shape)
-    print(classification_report(y_true=test_labels, y_pred=pred.argmax(axis=1), labels=class_names))
 
-    # normalised confusion matrix
-    matrix = confusion_matrix(y_true=test_labels, y_pred=pred.argmax(axis=1), labels=class_names)
-    matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
-    print(matrix.shape)
-
-    plt.figure(figsize = (10,7))
-    sn.heatmap(matrix, annot=True, fmt='.2f')
-    plt.show()
+    diagnose_output(test_labels, pred, class_names)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -176,7 +162,15 @@ if __name__ == '__main__':
         type=int,
         default=2,
         help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
-        dest='cls_choice')
+        dest='cls_choice'
+    )
+    parser.add_argument(
+        '-e', '--epochs',
+        type=int,
+        default=5,
+        help='How many epochs to train for',
+        dest='epochs'
+    )
     args = parser.parse_args()
-    
+
     classify(**vars(args))
