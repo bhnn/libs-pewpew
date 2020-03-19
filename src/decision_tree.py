@@ -19,7 +19,7 @@ def classify(**args):
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
     d = prepare_dataset(
-        0, # any synthetic
+        args['dataset_choice'],
         cls_target,
         batch_size,
         train_shuffle_repeat=False,
@@ -36,12 +36,6 @@ def classify(**args):
     del train_data
 
     # predict on testset and calculate classification report and confusion matrix for diagnosis
-    d = prepare_dataset(
-        2, # any handheld
-        cls_target,
-        batch_size,
-        train_shuffle_repeat=False,
-        categorical_labels=False)
     test_data = [sample for batch in tqdm(d['test_data'], total=d['test_steps'], desc='prep_test') for sample in batch[0]]
     pred = model.predict(test_data)
     del test_data
@@ -56,6 +50,13 @@ def classify(**args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-d', '--dataset',
+        type=int,
+        default=1,
+        help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
+        dest='dataset_choice'
+    )
     parser.add_argument(
         '-c', '--classification',
         type=int,
