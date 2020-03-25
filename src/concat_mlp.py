@@ -1,11 +1,13 @@
 import argparse
 
+from sklearn.metrics import balanced_accuracy_score
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras.layers import Input
 from tensorflow.keras.utils import plot_model
 
-from utils import (build_model, build_model_concat, prepare_dataset,
-                   set_classification_targets, print_dataset_info, diagnose_output)
+from utils import (build_model, build_model_concat, diagnose_output,
+                   prepare_dataset, print_dataset_info, repeat_and_collate,
+                   set_classification_targets)
 
 
 def classify(**args):
@@ -14,21 +16,23 @@ def classify(**args):
     
     :param args: keyword arguments passed from cli parser
     """
-    batch_size = 64
+    # only allow print-outs if execution has no repetitions
+    allow_print = args['repetitions'] == 1
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
     d = prepare_dataset(
         0, # any synthetic
         cls_target,
-        batch_size)
+        args['batch_size'])
 
     print('\n\tTask: Classify «{}» using «{}»\n'.format(cls_str, d['data_str']))
     print_dataset_info(d)
 
     model = build_model(1, d['num_classes'], name='concat_mlp', new_input=True)
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    model.summary()
-    plot_model(model, to_file='img/concat_mlp.png')
+    if allow_print:
+        model.summary()
+        plot_model(model, to_file='img/concat_mlp.png')
 
     # train and evaluate
     model.fit(
@@ -45,13 +49,15 @@ def classify(**args):
     d = prepare_dataset(
         1, # any handheld
         cls_target,
-        batch_size)
+        args['batch_size'])
+    print_dataset_info(d)
 
     # build model for handheld data, concatenates the output of the last pre-classification layer of the synthetic network
     concat_model = build_model_concat(2, d['num_classes'], concat_model=model)
     concat_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    concat_model.summary()
-    plot_model(concat_model, to_file='img/concat_mlp.png')
+    if allow_print:
+        concat_model.summary()
+        plot_model(concat_model, to_file='img/concat_mlp.png')
 
     concat_model.fit(
         d['train_data'],
@@ -63,10 +69,27 @@ def classify(**args):
     # predict on test set and calculate classification report and confusion matrix for diagnosis
     pred = model.predict(d['test_data'], steps=d['test_steps'])
 
-    diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
+    if allow_print:
+        diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
+    
+    return balanced_accuracy_score(d['test_labels'], pred.argmax(axis=1)) 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-r', '--repetitions',
+        type=int,
+        default=1,
+        help='Number of times to repeat experiment',
+        dest='repetitions'
+    )
+    parser.add_argument(
+        '-b', '--batchsize',
+        type=int,
+        default=64,
+        help='Target batch size of dataset preprocessing',
+        dest='batch_size'
+    )
     parser.add_argument(
         '-c', '--classification',
         type=int,
@@ -83,4 +106,4 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    classify(**vars(args))
+    repeat_and_collate(classify, **vars(args))

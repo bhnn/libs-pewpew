@@ -2,11 +2,12 @@ import argparse
 
 import pydotplus
 from sklearn.externals.six import StringIO
+from sklearn.metrics import balanced_accuracy_score
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 from tqdm import tqdm
 
 from utils import (diagnose_output, prepare_dataset, print_dataset_info,
-                   set_classification_targets)
+                   repeat_and_collate, set_classification_targets)
 
 
 def classify(**args):
@@ -15,13 +16,14 @@ def classify(**args):
     
     :param args: keyword arguments passed from cli parser
     """
-    batch_size = 64
+    # only allow print-outs if execution has no repetitions
+    allow_print = args['repetitions'] == 1
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
     d = prepare_dataset(
         0, # any synthetic
         cls_target,
-        batch_size,
+        args['batch_size'],
         train_shuffle_repeat=False,
         categorical_labels=False)
 
@@ -39,23 +41,41 @@ def classify(**args):
     d = prepare_dataset(
         2, # any handheld
         cls_target,
-        batch_size,
+        args['batch_size'],
         train_shuffle_repeat=False,
         categorical_labels=False)
     test_data = [sample for batch in tqdm(d['test_data'], total=d['test_steps'], desc='prep_test') for sample in batch[0]]
+    print_dataset_info(d)
     pred = model.predict(test_data)
     del test_data
 
-    # visualise decision tree, from datacamp.com/community/tutorials/decision-tree-classification-python
-    dot_data = StringIO()
-    export_graphviz(model, out_file=dot_data, filled=True, rounded=True, special_characters=True)
-    graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
-    graph.write_pdf('img/decision_tree.pdf')
+    if allow_print:
+        # visualise decision tree, from datacamp.com/community/tutorials/decision-tree-classification-python
+        dot_data = StringIO()
+        export_graphviz(model, out_file=dot_data, filled=True, rounded=True, special_characters=True)
+        graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
+        graph.write_pdf('img/decision_tree.pdf')
 
-    diagnose_output(d['test_labels'], pred, d['classes_trans'])
+        diagnose_output(d['test_labels'], pred, d['classes_trans'])
+
+    return balanced_accuracy_score(d['test_labels'], pred)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-r', '--repetitions',
+        type=int,
+        default=1,
+        help='Number of times to repeat experiment',
+        dest='repetitions'
+    )
+    parser.add_argument(
+        '-b', '--batchsize',
+        type=int,
+        default=64,
+        help='Target batch size of dataset preprocessing',
+        dest='batch_size'
+    )
     parser.add_argument(
         '-c', '--classification',
         type=int,
@@ -65,4 +85,4 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    classify(**vars(args))
+    repeat_and_collate(classify, **vars(args))

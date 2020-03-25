@@ -1,11 +1,14 @@
 import argparse
 
+from sklearn.metrics import balanced_accuracy_score
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Maximum
 from tensorflow.keras.utils import plot_model
 
 from utils import (build_model, diagnose_output, prepare_dataset,
-                   print_dataset_info, set_classification_targets)
+                   print_dataset_info, repeat_and_collate,
+                   set_classification_targets)
+
 
 def classify(**args):
     """
@@ -13,10 +16,14 @@ def classify(**args):
     
     :param args: keyword arguments passed from cli parser
     """
-    batch_size = 64
+    # only allow print-outs if execution has no repetitions
+    allow_print = args['repetitions'] == 1
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
-    d = prepare_dataset(args['dataset_choice'], cls_target, batch_size)
+    d = prepare_dataset(
+        args['dataset_choice'],
+        cls_target,
+        args['batch_size'])
 
     print('\n\tTask: Classify «{}» using «{}»\n'.format(cls_str, d['data_str']))
     print_dataset_info(d)
@@ -40,7 +47,8 @@ def classify(**args):
     multi_output = [m.outputs[0] for m in models]
     y = Maximum()(multi_output)
     model = Model(inputs, outputs=y, name='ensemble')
-    plot_model(model, to_file='img/ensemble_mlp.png')
+    if allow_print:
+        plot_model(model, to_file='img/ensemble_mlp.png')
 
     # compile and evaluation model
     print('Evaluate ...')
@@ -51,11 +59,28 @@ def classify(**args):
     print('Test ...')
     pred = model.predict(d['test_data'], steps=d['test_steps'])
 
-    diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
+    if allow_print:
+        diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
+    
+    return balanced_accuracy_score(d['test_labels'], pred.argmax(axis=1))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-r', '--repetitions',
+        type=int,
+        default=1,
+        help='Number of times to repeat experiment',
+        dest='repetitions'
+    )
+    parser.add_argument(
+        '-b', '--batchsize',
+        type=int,
+        default=64,
+        help='Target batch size of dataset preprocessing',
+        dest='batch_size'
+    )
     parser.add_argument(
         '-d', '--dataset',
         type=int,
@@ -86,4 +111,4 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    classify(**vars(args))
+    repeat_and_collate(classify, **vars(args))

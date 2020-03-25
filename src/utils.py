@@ -14,6 +14,21 @@ from tensorflow.keras import Model, regularizers
 from tensorflow.keras.layers import Concatenate, Dense, Dropout, Input
 
 
+def repeat_and_collate(classify_fn, **args):
+    """
+    Repeats classification function call with provided command-line arguments, collects results and prints mean and std.
+    
+    :param classify_fn: classification function reference
+    :param args: keyword-argument dictionary of command-line parameters provided by argparse
+    """
+    results = [classify_fn(**args) for _ in range(args['repetitions'])]
+
+    if len(results) > 1:
+        print('\nResults of experiment:')
+        for i,iteration in enumerate(results):
+            print(f'Run {i+1:02d} balanced accuracy:\t{round(results[i], 5)}')
+        print(f'Average balanced accuracy:\t{round(np.mean(results), 5)} (\u00B1 {round(np.std(results), 5)})\n')
+
 def has_sufficient_copper(spectrum, amount_t=0.5, drop_t=0.3):
     """
     Checks individual spectras for their copper content. If more than *amount_t*% of copper lines are below the *drop_t*
@@ -222,6 +237,7 @@ def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=Tru
         'test_data'    : __data_generator(test_data, target, num_classes, batch_size, trans_dict, False, categorical_labels),
         'train_labels' : transform_labels(train_labels, trans_dict),
         'test_labels'  : transform_labels(test_labels, trans_dict),
+        'batch_size'   : batch_size,
         'num_classes'  : num_classes,
         'classes_orig' : sorted(trans_dict.keys()),
         'classes_trans': sorted(trans_dict.values()),
@@ -237,7 +253,7 @@ def print_dataset_info(dataset):
     
     :param dataset: dict containing dataset information
     """
-    print('\tData set information:\n\t{')
+    print('\n\tData set information:\n\t{')
     for k,v in dataset.items():
         print('\t\t{:<13} : {},{}'.format(k, v, f' len({len(v)}),' if hasattr(v, '__len__') and not isinstance(v, str) else ''))
     print('\t}\n')
