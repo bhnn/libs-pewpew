@@ -258,49 +258,78 @@ def print_dataset_info(dataset):
         print('\t\t{:<13} : {},{}'.format(k, v, f' len({len(v)}),' if hasattr(v, '__len__') and not isinstance(v, str) else ''))
     print('\t}\n')
 
-def prepare_dataset_mixture(targets, num_classes, mixture, batch_size=64):
-    train_samples_hh, train_labels_hh, test_samples_hh, test_labels_hh = np.load('/home/ben/Desktop/ML/pretty_data/final.npy', allow_pickle=True)
-    train_samples_syn, train_labels_syn, test_samples_syn, test_labels_syn = np.load('/home/ben/Desktop/ML/synthetic_data/final.npy', allow_pickle=True)
+def prepare_mixture_dataset(target, batch_size, mixture_pct):
+    """
+    Provides data generators, labels and other information for a mixture of synthetic and handheld data. 
+    
+    :param dataset_choice:          which dataset to prepare
+    :param targets:                 classification target
+    :param batch_size:              batch size
+    :param mixture_pct:             percentage of dataset mixture to produce
+    :returns:                       dict containing train/eval/test generators, train/test labels, number of unique 
+                                    classes, original and transformed class ids, train/test steps, balanced class 
+                                    weights and data description
+    :raises ValueError:             if dataset_choice is invalid
+    """
+    path_hh_12 = r'/home/ben/Desktop/ML/hh_6'
+    path_synthetic = r'/home/ben/Desktop/ML/synthetic'
+    
+    # hh data
+    train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train', '*.npz'))))
+    test_data_hh = np.array(sorted(glob(join(path_hh_12, 'test', '*.npz'))))
+    train_labels_hh = __get_labels(train_data_hh, target)
+    test_labels_hh = __get_labels(test_data_hh, target)
 
-    hh_counts = dict(zip(*np.unique(train_labels_hh[:,targets].astype(int), return_counts=True)))
-    syn_counts = dict(zip(*np.unique(train_labels_syn[:,targets].astype(int), return_counts=True)))
+    # synthetic data
+    train_data_syn = np.array(sorted(glob(join(path_synthetic, 'train', '*.npz'))))
+    test_data_syn = np.array(sorted(glob(join(path_synthetic, 'test', '*.npz'))))
+    train_labels_syn = __get_labels(train_data_syn, target)
+    test_labels_syn = __get_labels(test_data_syn, target)
 
+    # class counts
+    hh_counts = dict(zip(*np.unique(train_labels_hh, return_counts=True)))
+    syn_counts = dict(zip(*np.unique(train_labels_syn, return_counts=True)))
+
+    # iterate over labels and counts of both hh and synthetic dataset
     for (hhl,hhc),(_,sync) in zip(hh_counts.items(), syn_counts.items()):
-        n = int(hhc * mixture)
+        # amount of data to mix in (mixture_pct% of hhc-many data samples)
+        n = int(hhc * mixture_pct)
         if n > sync:
             print(f'Warning: Requested amount of data ({n}) for label {hhl} is larger than synthetic data for this label ({sync})')
-        indices = (train_labels_syn[:,targets].astype(int) == hhl)
-        train_samples_hh = np.vstack((train_samples_hh, train_samples_syn[indices][:n]))
-        train_labels_hh = np.vstack((train_labels_hh, train_labels_syn[indices][:n]))
+        # get logical list of indices where synthetic training labels are equal to target label
+        # then reduce that list to only the True labels, so we can slice off the required amount of items
+        indices = np.where((train_labels_syn == hhl))[0]
+        train_data_hh = np.append(train_data_hh, train_data_syn[indices][:n])
+        train_labels_hh = np.append(train_labels_hh, train_labels_syn[indices][:n])
 
-    # test new dataset consistency
-    # hh_counts_post = dict(zip(*np.unique(train_labels_hh[:,targets].astype(int), return_counts=True)))
-    # syn_counts_post = dict(zip(*np.unique(train_labels_syn[:,targets].astype(int), return_counts=True)))
+    # post dataset consistency check
+    # hh_counts_post = dict(zip(*np.unique(train_labels_hh, return_counts=True)))
+    # syn_counts_post = dict(zip(*np.unique(train_labels_syn, return_counts=True)))
     # for (hhl1,hhc1),(hhl2,hhc2) in zip(hh_counts_post.items(), hh_counts.items()):
-    #     print(f'label: {hhl1}, before: {hhc2}, after: {hhc1}, diff: {hhc1-hhc2}')
+    #     print(f'label: {hhl1}    before: {hhc2:4d}    after: {hhc1:4d}    diff: {hhc1-hhc2:4d} ({round(((hhc1-hhc2)/hhc2)*100,1):4}%)')
 
-    # normalise each sample with its own np.max
-    train_samples_norm = normalise_minmax(train_samples_hh)
-    test_samples_norm = normalise_minmax(test_samples_hh)
-    # create onehot vectors out of labels
-    train_labels = transform_labels(train_labels_hh, cell=targets)
-    test_labels = transform_labels(test_labels_hh, cell=targets)
-    train_labels = train_labels_hh[:,targets].astype(int)
-    test_labels = test_labels_hh[:,targets].astype(int)
-    train_labels_onehot = to_categorical(train_labels, num_classes)
-    test_labels_onehot = to_categorical(test_labels, num_classes)
-    # use Dataset as input pipeline
-    train_data = tf.data.Dataset.from_tensor_slices((train_samples_norm, train_labels_onehot)).shuffle(10000).batch(batch_size, drop_remainder=True).repeat(-1)
-    test_data  = tf.data.Dataset.from_tensor_slices((test_samples_norm, test_labels_onehot)).batch(batch_size)
+    num_classes = len(np.unique(train_labels_hh))
+    trans_dict = get_transformation_dict(train_labels_hh)
+    class_weights = class_weight.compute_class_weight('balanced', sorted(trans_dict.keys()), train_labels_hh)
 
-    # class distribution
-    class_counts = dict(zip(*np.unique(train_labels, return_counts=True)))
-    print('current class distribution: ', class_counts)
-
-    epoch_steps = train_samples_norm.shape[0] // batch_size
-    data_str = f'handheld data augmented with {mixture*100}% synthetic data'
-
-    return train_data, test_data, train_labels, test_labels, epoch_steps, data_str
+    # list of "class" names used for confusion matrices and validity testing. Not always classes, also subgroups or
+    # minerals, depending on classification targets
+    return {
+        'dataset_name' : 'mixture synthetic/hh_12',
+        'train_data'   : __data_generator(train_data_hh, target, num_classes, batch_size, trans_dict, True),
+        'eval_data'    : __data_generator(test_data_hh, target, num_classes, batch_size, trans_dict, False),
+        'test_data'    : __data_generator(test_data_hh, target, num_classes, batch_size, trans_dict, False),
+        'train_labels' : transform_labels(train_labels_hh, trans_dict),
+        'test_labels'  : transform_labels(test_labels_hh, trans_dict),
+        'batch_size'   : batch_size,
+        'num_classes'  : num_classes,
+        'classes_orig' : sorted(trans_dict.keys()),
+        'classes_trans': sorted(trans_dict.values()),
+        'train_steps'  : ceil(len(train_labels_hh) / batch_size),
+        'test_steps'   : ceil(len(test_labels_hh) / batch_size),
+        'class_weights': {i:weight for i, weight in enumerate(class_weights)},
+        'data_str'     : f'hh_12 data augmented with {mixture_pct*100}% synthetic data',
+    }
 
 def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg=regularizers.l2, reg_lambda=0.0001):
     model_name = name if name else f'model_{id}'
