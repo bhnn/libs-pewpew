@@ -1,3 +1,4 @@
+from functools import partial
 from glob import glob
 from math import ceil
 from ntpath import basename
@@ -145,6 +146,53 @@ def diagnose_output(y_true, y_pred, class_ids):
     plt.ylabel('True label')
     plt.show()
 
+def get_64shot_transition_matrix(test_filepaths):
+    """
+    Takes the file paths of the test set and computes a transition matrix from a ordered, consecutive list of file paths
+    to a stack of 8x8 grid layouts. Because the majority of real handheld data has one or more gaps somewhere in its 64
+    shots, just piling all results consecutively into a 8x8 grid does not work and these gaps need to be taken into
+    account.
+    
+    :param test_data_path: list of file paths
+    :returns: ndarray [measure_point, x_coord, y_coord] of transitions from consecutive list to heatmap layout
+    """
+    i = 0
+    measure_point_split = list()
+    # iterate over all files (sorted alphabetically)
+    while i < len(test_filepaths):
+        # extract id and measure point
+        m_id, _, _, measure_point, _ = test_filepaths[i].split('/')[-1].split('_')
+        split = list()
+        # look ahead for all other files of same measure point
+        # save them to list of mps, then continue iterating after last current sample of mp
+        # reduces runtime to O(n) instead of O(n²)
+        for j in range(i, len(test_filepaths)):
+            m_id_j, _, _, mp_j, _ = test_filepaths[j].split('/')[-1].split('_')
+            if m_id == m_id_j and measure_point == mp_j:
+                split.append(test_filepaths[j])
+                i += 1
+            else: # files are sorted, assumes measure point is exhausted after first mismatch
+                break
+        measure_point_split.append(split)
+
+    # len(files) x [measure_point x_coord y_coord]
+    transition_matrix = np.zeros((len(test_filepaths), 3), dtype=int)
+    i = 0
+    j = 0
+
+    # create transition for each shot onto 8x8 grid, to plot a heatmap of LIBS accuracy
+    for mp in measure_point_split:
+        for sample in mp:
+            # string clipping of Shot-ID from filename, -1 to make it work with 0-based math
+            shot_id = int(sample.split('/')[-1].split('_')[-1][:-4]) - 1
+            transition_matrix[i, 0] = j
+            transition_matrix[i, 1] = shot_id // 8
+            transition_matrix[i, 2] = shot_id % 8
+            i += 1
+        j += 1
+
+    return transition_matrix
+
 def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffle_and_repeat, categorical=True):
     """
     Internal generator function to yield processed batches of data.
@@ -185,7 +233,7 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
             i += 1
         yield samples, labels
 
-def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=True, categorical_labels=True):
+def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=True, categorical_labels=True, mp_heatmap=False):
     """
     Provides data generators, labels and other information for selected dataset. 
     
@@ -194,6 +242,7 @@ def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=Tru
     :param batch_size:              batch size
     :param train_shuffle_repeat:    whether to shuffle and repeat the train generator
     :param categorical_labels:      whether to transform labels to categorical
+    :param mp_heatmap:              whether to include a transition matrix for 64-Shot heatmap analyses
     :returns:                       dict containing train/eval/test generators, train/test labels, number of unique 
                                     classes, original and transformed class ids, train/test steps, balanced class 
                                     weights and data description
@@ -244,23 +293,30 @@ def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=Tru
         'train_steps'  : ceil(len(train_labels) / batch_size),
         'test_steps'   : ceil(len(test_labels) / batch_size),
         'class_weights': {i:weight for i, weight in enumerate(class_weights)},
+        'heatmap_tm'   : get_64shot_transition_matrix(test_data) if mp_heatmap else None,
         'data_str'     : data_str,
     }
 
 def print_dataset_info(dataset):
     """
-    Prints formatted dataset information for the user.
+    Prints formatted dataset information for visual inspection.
     
     :param dataset: dict containing dataset information
     """
     print('\n\tData set information:\n\t{')
     for k,v in dataset.items():
-        print('\t\t{:<13} : {},{}'.format(k, v, f' len({len(v)}),' if hasattr(v, '__len__') and not isinstance(v, str) else ''))
+        if k == 'heatmap_tm':
+            print('\t\t{:<13} : {},'.format(k, 'N/A' if v is None else f'{np.max(v, axis=0)[0] + 1} measure point transitions')) 
+        elif hasattr(v, '__len__') and not isinstance(v, str):
+            print('\t\t{:<13} : {},{}'.format(k, v, f' len({len(v)}),'))
+        else:
+            print(f'\t\t{k:<13} : {v},')
     print('\t}\n')
 
 def prepare_mixture_dataset(target, batch_size, mixture_pct):
     """
-    Provides data generators, labels and other information for a mixture of synthetic and handheld data. 
+    Provides data generators, labels and other information for a mixture of synthetic and handheld data. Returns partial
+    function calls for eval and test set generators because they are non-repeating, so they can be used multiple times.
     
     :param dataset_choice:          which dataset to prepare
     :param targets:                 classification target
@@ -317,8 +373,8 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct):
     return {
         'dataset_name' : 'mixture synthetic/hh_12',
         'train_data'   : __data_generator(train_data_hh, target, num_classes, batch_size, trans_dict, True),
-        'eval_data'    : __data_generator(test_data_hh, target, num_classes, batch_size, trans_dict, False),
-        'test_data'    : __data_generator(test_data_hh, target, num_classes, batch_size, trans_dict, False),
+        'eval_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False),
+        'test_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False),
         'train_labels' : transform_labels(train_labels_hh, trans_dict),
         'test_labels'  : transform_labels(test_labels_hh, trans_dict),
         'batch_size'   : batch_size,

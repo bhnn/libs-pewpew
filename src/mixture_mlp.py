@@ -37,7 +37,7 @@ def classify(**args):
                 verbose=0,
                 class_weight=d['class_weights'])
             # evaluate returns (final loss, final acc), thus the [1]
-            results[i,j] = model.evaluate(d['test_data'], steps=d['test_steps'], verbose=1)[1]
+            results[i,j] = model.evaluate(d['test_data'](), steps=d['test_steps'], verbose=1)[1]
     print(results)
     np.save(f'results/synthetic_influence_target_{cls_target}', results)
 
