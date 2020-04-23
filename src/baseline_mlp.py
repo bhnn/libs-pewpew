@@ -12,7 +12,7 @@ from utils import (build_model, diagnose_output, prepare_dataset,
 def classify(**args):
     """
     Main method that prepares dataset, builds model, executes training and displays results.
-    
+
     :param args: keyword arguments passed from cli parser
     """
     # only allow print-outs if execution has no repetitions
@@ -22,7 +22,8 @@ def classify(**args):
     d = prepare_dataset(
         args['dataset_choice'],
         cls_target,
-        args['batch_size'])
+        args['batch_size'],
+        args['norm_choice'])
 
     print('\n\tTask: Classify «{}» using «{}»\n'.format(cls_str, d['data_str']))
     print_dataset_info(d)
@@ -94,6 +95,14 @@ if __name__ == '__main__':
         help='How many epochs to train for',
         dest='epochs'
     )
+    parser.add_argument(
+        '-n', '--normalisation',
+        type=int,
+        default=0,
+        help='Which normalisation to use. 0=minmax, 1=snv, 2=None',
+        dest='norm_choice'
+    )
+
     args = parser.parse_args()
 
     repeat_and_collate(classify, **vars(args))

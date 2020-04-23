@@ -8,17 +8,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 import tensorflow as tf
+import sys
+import warnings
 from keras.utils import to_categorical
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.utils import class_weight, shuffle
 from tensorflow.keras import Model, regularizers
 from tensorflow.keras.layers import Concatenate, Dense, Dropout, Input
-
+from scipy import sparse
+from scipy.sparse.linalg import spsolve
 
 def repeat_and_collate(classify_fn, **args):
     """
     Repeats classification function call with provided command-line arguments, collects results and prints mean and std.
-    
+
     :param classify_fn: classification function reference
     :param args: keyword-argument dictionary of command-line parameters provided by argparse
     """
@@ -34,7 +37,7 @@ def has_sufficient_copper(spectrum, amount_t=0.5, drop_t=0.3):
     """
     Checks individual spectras for their copper content. If more than *amount_t*% of copper lines are below the *drop_t*
     percentile, then the spectrum more likely captures matrix rock.
-    
+
     :param spectrum:    ndarray containing the spectrum
     :param amount_t:    threshold (float %) of copper lines expected to have high intensity
     :param drop_t:      threshold (float %) signifying "low" copper intensity
@@ -54,7 +57,7 @@ def has_sufficient_copper(spectrum, amount_t=0.5, drop_t=0.3):
 def set_classification_targets(cls_choice):
     """
     Validate classification choice by user and provide written detail about what the goal of the classification effort is.
-    
+
     :param cls_choice: Classification choice provided by user (via cli parameter)
     :returns: tuple of (classification choice, classification string)
     :raise ValueError: cls_choice is out of defined range
@@ -73,10 +76,10 @@ def __get_labels(files, targets):
     """
     Extracts data labels from filenames of passed list of filepaths. Faster than loading all files into memory. Only
     provides labels for current classification target.
-    
+
     :param files:       list of file paths
     :param targets:     classification targets
-    :returns:           ndarray(int) of labels 
+    :returns:           ndarray(int) of labels
     :raises error type: raises description
     """
     # translates targets into position of information in filename
@@ -86,7 +89,7 @@ def __get_labels(files, targets):
 def get_transformation_dict(labels, dict_or_np='dict'):
     """
     Creates gapless list of labels (e.g. 0, 1, 2, 3, 4) from "sparse" data labels (e.g. 11, 28, 35, 73, 98).
-    
+
     :param labels:      list of labels to transform
     :param dict_or_np:  {'dict', 'np', 'numpy'} whether returned transformation matrix should be a dict or ndarray
     :returns:           label transformation info, as dict or ndarray
@@ -99,7 +102,7 @@ def get_transformation_dict(labels, dict_or_np='dict'):
 def transform_labels(label_data, trans_dict):
     """
     Transforms labels according to information from trans_dict.
-    
+
     :param label_data:  labels to transform
     :param trans_dict:  transformation info, as dict or ndarray
     :returns:           list of transformed labels
@@ -113,21 +116,66 @@ def normalise_minmax(sample):
     """
     Normalises single sample according to minmax. Also strips wavelength information from sample.
     Adapted from Federico Malerba.
-    
+
     :param sample:  sample to process
     :returns:       normalised sample
     """
-    if np.max(sample[:,1]) > 0:
-        # only work with 2nd column of information (intensity), discard wavelength
-        sample = sample[:,1] / np.max(sample[:,1])
-    else:
-        sample = np.zeros(sample.shape[0])
+    return sample / np.max(sample)
+
+def normalise_snv(sample):
+    """
+    Standard normal variate (SNV) normalisation
+    """
+    return (sample - np.mean(sample)) / np.std(sample)
+
+def no_normalisation(sample):
+    """
+    No normalisation, just strips wavelength information from sample.
+
+    :param sample:  sample to process
+    :returns:       not normalised sample
+    """
     return sample
+
+
+def baseline_als(y, lam=10000, p=0.1, niter=10):
+    if np.max(y) <0:
+        warnings.warn('LIBS shot is empty, no positive values')
+    y = y[:,1]
+    y = y.clip(min=0) #remove values < 0
+    L = len(y)
+    D = sparse.diags([1,-2,1],[0,-1,-2], shape=(L,L-2))
+    w = np.ones(L)
+    for i in range(niter):
+        W = sparse.spdiags(w, 0, L, L)
+        Z = W + lam * D.dot(D.transpose())
+        z = spsolve(Z, w*y)
+        w = p * (y > z) + (1-p) * (y < z)
+    new = y - z
+    return new.clip(min=0)
+
+def baseline_als_optimized(y, lam=10000, p=0.1, niter=10):
+    if np.max(y) <0:
+        warnings.warn('LIBS shot is empty, no positive values')
+    y = y[:,1].clip(min=0) #remove values < 0 and discard wavelengths
+    L = len(y)
+    D = sparse.diags([1,-2,1],[0,-1,-2], shape=(L,L-2))
+    D = lam * D.dot(D.transpose()) # Precompute this term since it does not depend on `w`
+    w = np.ones(L)
+    W = sparse.spdiags(w, 0, L, L)
+    for i in range(niter):
+        W.setdiag(w) # Do not create a new matrix, just update diagonal values
+        Z = W + D
+        z = spsolve(Z, w*y)
+        w = p * (y > z) + (1-p) * (y < z)
+    new = y - z
+    return new.clip(min=0)
+
 
 def diagnose_output(y_true, y_pred, class_ids):
     """
     Calculates sklearn.metrics.classification_report and confusion matrix for provided data and visualises them.
-    
+
     :param y_true:      true label information
     :param y_pred:      predicted values
     :param class_ids:   transformed ids of classes for plotting
@@ -152,7 +200,7 @@ def get_64shot_transition_matrix(test_filepaths):
     to a stack of 8x8 grid layouts. Because the majority of real handheld data has one or more gaps somewhere in its 64
     shots, just piling all results consecutively into a 8x8 grid does not work and these gaps need to be taken into
     account.
-    
+
     :param test_data_path: list of file paths
     :returns: ndarray [measure_point, x_coord, y_coord] of transitions from consecutive list to heatmap layout
     """
@@ -193,10 +241,10 @@ def get_64shot_transition_matrix(test_filepaths):
 
     return transition_matrix
 
-def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffle_and_repeat, categorical=True):
+def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffle_and_repeat, norm_function, categorical=True):
     """
     Internal generator function to yield processed batches of data.
-    
+
     :param files:               list of files to work with
     :param targets:             classification targets chosen by user
     :param num_classes:         number of unique classes in dataset
@@ -229,44 +277,54 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
             with np.load(files[i]) as npz_file:
                 label = transform_labels(npz_file['labels'][targets], trans_dict)
                 labels[j]  = to_categorical(label, num_classes) if categorical else label
-                samples[j] = normalise_minmax(npz_file['data'])
+                #samples[j] = baseline_als(y=npz_file['data'])
+                #samples[j] = norm_function(samples[j])
+                samples[j] = norm_function(npz_file['data'])
+                samples[j] = normalise_snv(samples[j])
             i += 1
         yield samples, labels
 
-def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=True, categorical_labels=True, mp_heatmap=False):
+def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shuffle_repeat=True, categorical_labels=True, mp_heatmap=False):
     """
-    Provides data generators, labels and other information for selected dataset. 
-    
+    Provides data generators, labels and other information for selected dataset.
+
     :param dataset_choice:          which dataset to prepare
     :param targets:                 classification target
     :param batch_size:              batch size
     :param train_shuffle_repeat:    whether to shuffle and repeat the train generator
     :param categorical_labels:      whether to transform labels to categorical
     :param mp_heatmap:              whether to include a transition matrix for 64-Shot heatmap analyses
-    :returns:                       dict containing train/eval/test generators, train/test labels, number of unique 
-                                    classes, original and transformed class ids, train/test steps, balanced class 
+    :returns:                       dict containing train/eval/test generators, train/test labels, number of unique
+                                    classes, original and transformed class ids, train/test steps, balanced class
                                     weights and data description
     :raises ValueError:             if dataset_choice is invalid
     """
     if dataset_choice == 0:
-        data_path = r"/media/ben/Volume/ml_data/synthetic"
+        data_path = r"/samba/cjh/julia/synthetic_all"
         data_str = 'synthetic data'
         data_name = 'synthetic'
     elif dataset_choice == 1:
-        data_path = r'/home/ben/Desktop/ML/hh_6'
+        data_path = r'/Volumes/Samsung_T5/LIBSqORE_Austausch/hh_6'
         data_str = 'handheld data (6 classes)'
         data_name = 'hh_6'
     elif dataset_choice == 2:
-        data_path = r'/media/ben/Volume/ml_data/hh_raw/hh_12'
+        data_path = r'/Volumes/Samsung_T5/LIBSqORE_Austausch/hh_12'
         data_str = 'handheld data (12 classes)'
         data_name = 'hh_12'
     elif dataset_choice == 3:
-        data_path = r'/media/ben/Volume/ml_data/hh_raw/hh_all'
+        data_path = r'/Volumes/Samsung_T5/LIBSqORE_Austausch/hh_all'
         data_str = 'handheld data (100 classes)'
         data_name = 'hh_all'
     else:
         raise ValueError('Invalid dataset parameter')
-    
+
+    if normalisation == 0:
+        norm_function = normalise_minmax
+    elif normalisation == 1:
+        norm_function = baseline_als
+    elif normalisation == 2:
+        norm_function = no_normalisation
+
     train_data = sorted(glob(join(data_path, 'train', '*.npz')))
     test_data = sorted(glob(join(data_path, 'test', '*.npz')))
 
@@ -281,13 +339,14 @@ def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=Tru
     # minerals, depending on classification targets
     return {
         'dataset_name' : data_name,
-        'train_data'   : __data_generator(train_data, target, num_classes, batch_size, trans_dict, train_shuffle_repeat, categorical_labels),
-        'eval_data'    : __data_generator(test_data, target, num_classes, batch_size, trans_dict, False, categorical_labels),
-        'test_data'    : __data_generator(test_data, target, num_classes, batch_size, trans_dict, False, categorical_labels),
+        'train_data'   : __data_generator(train_data, target, num_classes, batch_size, trans_dict, train_shuffle_repeat, norm_function, categorical_labels),
+        'eval_data'    : __data_generator(test_data, target, num_classes, batch_size, trans_dict, False, norm_function, categorical_labels),
+        'test_data'    : __data_generator(test_data, target, num_classes, batch_size, trans_dict, False, norm_function, categorical_labels),
         'train_labels' : transform_labels(train_labels, trans_dict),
         'test_labels'  : transform_labels(test_labels, trans_dict),
         'batch_size'   : batch_size,
         'num_classes'  : num_classes,
+        'norm_function': norm_function.__name__,
         'classes_orig' : sorted(trans_dict.keys()),
         'classes_trans': sorted(trans_dict.values()),
         'train_steps'  : ceil(len(train_labels) / batch_size),
@@ -300,13 +359,13 @@ def prepare_dataset(dataset_choice, target, batch_size, train_shuffle_repeat=Tru
 def print_dataset_info(dataset):
     """
     Prints formatted dataset information for visual inspection.
-    
+
     :param dataset: dict containing dataset information
     """
     print('\n\tData set information:\n\t{')
     for k,v in dataset.items():
         if k == 'heatmap_tm':
-            print('\t\t{:<13} : {},'.format(k, 'N/A' if v is None else f'{np.max(v, axis=0)[0] + 1} measure point transitions')) 
+            print('\t\t{:<13} : {},'.format(k, 'N/A' if v is None else f'{np.max(v, axis=0)[0] + 1} measure point transitions'))
         elif hasattr(v, '__len__') and not isinstance(v, str):
             print('\t\t{:<13} : {},{}'.format(k, v, f' len({len(v)}),'))
         else:
@@ -317,19 +376,19 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct):
     """
     Provides data generators, labels and other information for a mixture of synthetic and handheld data. Returns partial
     function calls for eval and test set generators because they are non-repeating, so they can be used multiple times.
-    
+
     :param dataset_choice:          which dataset to prepare
     :param targets:                 classification target
     :param batch_size:              batch size
     :param mixture_pct:             percentage of dataset mixture to produce
-    :returns:                       dict containing train/eval/test generators, train/test labels, number of unique 
-                                    classes, original and transformed class ids, train/test steps, balanced class 
+    :returns:                       dict containing train/eval/test generators, train/test labels, number of unique
+                                    classes, original and transformed class ids, train/test steps, balanced class
                                     weights and data description
     :raises ValueError:             if dataset_choice is invalid
     """
     path_hh_12 = r'/home/ben/Desktop/ML/hh_6'
     path_synthetic = r'/home/ben/Desktop/ML/synthetic'
-    
+
     # hh data
     train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train', '*.npz'))))
     test_data_hh = np.array(sorted(glob(join(path_hh_12, 'test', '*.npz'))))
