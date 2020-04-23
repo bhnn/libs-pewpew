@@ -125,6 +125,9 @@ def normalise_minmax(sample):
 def normalise_snv(sample):
     """
     Standard normal variate (SNV) normalisation
+
+    :param sample:  sample to process
+    :returns:       normalised sample
     """
     return (sample - np.mean(sample)) / np.std(sample)
 
@@ -155,6 +158,14 @@ def baseline_als(y, lam=10000, p=0.1, niter=10):
     return new.clip(min=0)
 
 def baseline_als_optimized(y, lam=10000, p=0.1, niter=10):
+    """
+    Calculates the baseline correction of LIBS spectra and returns corrected
+    spectra.
+    :param y:       sample to process
+    :param lam:     smoothness
+    :param p:       asymmetry
+    :param niter:   number of iterations
+    """
     if np.max(y) <0:
         warnings.warn('LIBS shot is empty, no positive values')
     y = y[:,1].clip(min=0) #remove values < 0 and discard wavelengths
@@ -251,6 +262,7 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
     :param batch_size:          batch size of yielded batches
     :param trans_dict:          transformation info to process labels
     :param shuffle_and_repeat:  True to shuffle and repeat dataset infinitely, False otherwise
+    :param norm_function:       chosen normalisation function
     :param categorical:         True to provide categorical labels, False otherwise
     :yields:                    (sample, label) tuples
     """
@@ -277,10 +289,8 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
             with np.load(files[i]) as npz_file:
                 label = transform_labels(npz_file['labels'][targets], trans_dict)
                 labels[j]  = to_categorical(label, num_classes) if categorical else label
-                #samples[j] = baseline_als(y=npz_file['data'])
-                #samples[j] = norm_function(samples[j])
-                samples[j] = norm_function(npz_file['data'])
-                samples[j] = normalise_snv(samples[j])
+                samples[j] = baseline_als_optimized(y=npz_file['data'])
+                samples[j] = norm_function(samples[j])
             i += 1
         yield samples, labels
 
@@ -291,6 +301,7 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shu
     :param dataset_choice:          which dataset to prepare
     :param targets:                 classification target
     :param batch_size:              batch size
+    :param normalisation:           which normalisation method to use
     :param train_shuffle_repeat:    whether to shuffle and repeat the train generator
     :param categorical_labels:      whether to transform labels to categorical
     :param mp_heatmap:              whether to include a transition matrix for 64-Shot heatmap analyses
@@ -319,11 +330,11 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shu
         raise ValueError('Invalid dataset parameter')
 
     if normalisation == 0:
-        norm_function = normalise_minmax
-    elif normalisation == 1:
-        norm_function = baseline_als
-    elif normalisation == 2:
         norm_function = no_normalisation
+    elif normalisation == 1:
+        norm_function = normalise_snv
+    elif normalisation == 2:
+        norm_function = normalise_minmax
 
     train_data = sorted(glob(join(data_path, 'train', '*.npz')))
     test_data = sorted(glob(join(data_path, 'test', '*.npz')))

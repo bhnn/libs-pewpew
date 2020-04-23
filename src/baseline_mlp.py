@@ -99,7 +99,7 @@ if __name__ == '__main__':
         '-n', '--normalisation',
         type=int,
         default=0,
-        help='Which normalisation to use. 0=minmax, 1=snv, 2=None',
+        help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
         dest='norm_choice'
     )
 
