@@ -120,7 +120,10 @@ def normalise_minmax(sample):
     :param sample:  sample to process
     :returns:       normalised sample
     """
-    return sample / np.max(sample)
+    if np.max(sample) > 0:
+        return sample / np.max(sample)
+    else:
+        print('Sample is empty')
 
 def normalise_snv(sample):
     """
@@ -129,7 +132,10 @@ def normalise_snv(sample):
     :param sample:  sample to process
     :returns:       normalised sample
     """
-    return (sample - np.mean(sample)) / np.std(sample)
+    if np.max(sample) > 0:
+        return (sample - np.mean(sample)) / np.std(sample)
+    else:
+        print('Sample is empty')
 
 def no_normalisation(sample):
     """
@@ -141,23 +147,8 @@ def no_normalisation(sample):
     return sample
 
 
-def baseline_als(y, lam=10000, p=0.1, niter=10):
-    if np.max(y) <0:
-        warnings.warn('LIBS shot is empty, no positive values')
-    y = y[:,1]
-    y = y.clip(min=0) #remove values < 0
-    L = len(y)
-    D = sparse.diags([1,-2,1],[0,-1,-2], shape=(L,L-2))
-    w = np.ones(L)
-    for i in range(niter):
-        W = sparse.spdiags(w, 0, L, L)
-        Z = W + lam * D.dot(D.transpose())
-        z = spsolve(Z, w*y)
-        w = p * (y > z) + (1-p) * (y < z)
-    new = y - z
-    return new.clip(min=0)
 
-def baseline_als_optimized(y, lam=10000, p=0.1, niter=10):
+def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     """
     Calculates the baseline correction of LIBS spectra and returns corrected
     spectra.
@@ -289,8 +280,10 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
             with np.load(files[i]) as npz_file:
                 label = transform_labels(npz_file['labels'][targets], trans_dict)
                 labels[j]  = to_categorical(label, num_classes) if categorical else label
-                samples[j] = baseline_als_optimized(y=npz_file['data'])
-                samples[j] = norm_function(samples[j])
+                #samples[j] = baseline_als_optimized(y=npz_file['data']) #in case of not using the already baseline corrected spectra
+                #samples[j] = norm_function(samples[j])
+                samples[j] = norm_function(npz_file['data'][:,1])
+
             i += 1
         yield samples, labels
 
@@ -315,15 +308,15 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shu
         data_str = 'synthetic data'
         data_name = 'synthetic'
     elif dataset_choice == 1:
-        data_path = r'/Volumes/Samsung_T5/LIBSqORE_Austausch/hh_6'
+        data_path = r'/Users/jh/github/hh_6'
         data_str = 'handheld data (6 classes)'
         data_name = 'hh_6'
     elif dataset_choice == 2:
-        data_path = r'/Volumes/Samsung_T5/LIBSqORE_Austausch/hh_12'
+        data_path = r'/Users/jh/github/hh_12'
         data_str = 'handheld data (12 classes)'
         data_name = 'hh_12'
     elif dataset_choice == 3:
-        data_path = r'/Volumes/Samsung_T5/LIBSqORE_Austausch/hh_all'
+        data_path = r'/Users/jh/github/hh_all'
         data_str = 'handheld data (100 classes)'
         data_name = 'hh_all'
     else:
@@ -336,8 +329,8 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shu
     elif normalisation == 2:
         norm_function = normalise_minmax
 
-    train_data = sorted(glob(join(data_path, 'train', '*.npz')))
-    test_data = sorted(glob(join(data_path, 'test', '*.npz')))
+    train_data = sorted(glob(join(data_path, 'train_corrected', '*.npz')))
+    test_data = sorted(glob(join(data_path, 'test_corrected', '*.npz')))
 
     train_labels = __get_labels(train_data, target)
     test_labels = __get_labels(test_data, target)
@@ -383,7 +376,7 @@ def print_dataset_info(dataset):
             print(f'\t\t{k:<13} : {v},')
     print('\t}\n')
 
-def prepare_mixture_dataset(target, batch_size, mixture_pct):
+def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
     """
     Provides data generators, labels and other information for a mixture of synthetic and handheld data. Returns partial
     function calls for eval and test set generators because they are non-repeating, so they can be used multiple times.
@@ -397,12 +390,20 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct):
                                     weights and data description
     :raises ValueError:             if dataset_choice is invalid
     """
-    path_hh_12 = r'/home/ben/Desktop/ML/hh_6'
-    path_synthetic = r'/home/ben/Desktop/ML/synthetic'
+    path_hh_12 = r'/Users/jh/github/hh_12'
+    path_synthetic = r'/Volumes/Samsung_T5/synthetic_all'
+
+    if normalisation == 0:
+        norm_function = no_normalisation
+    elif normalisation == 1:
+        norm_function = normalise_snv
+    elif normalisation == 2:
+        norm_function = normalise_minmax
+
 
     # hh data
-    train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train', '*.npz'))))
-    test_data_hh = np.array(sorted(glob(join(path_hh_12, 'test', '*.npz'))))
+    train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train_corrected', '*.npz'))))
+    test_data_hh = np.array(sorted(glob(join(path_hh_12, 'test_corrected', '*.npz'))))
     train_labels_hh = __get_labels(train_data_hh, target)
     test_labels_hh = __get_labels(test_data_hh, target)
 
@@ -441,14 +442,16 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct):
     # list of "class" names used for confusion matrices and validity testing. Not always classes, also subgroups or
     # minerals, depending on classification targets
     return {
+
         'dataset_name' : 'mixture synthetic/hh_12',
-        'train_data'   : __data_generator(train_data_hh, target, num_classes, batch_size, trans_dict, True),
-        'eval_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False),
-        'test_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False),
+        'train_data'   : __data_generator(train_data_hh, target, num_classes, batch_size, trans_dict, True, norm_function),
+        'eval_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False, norm_function),
+        'test_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False, norm_function),
         'train_labels' : transform_labels(train_labels_hh, trans_dict),
         'test_labels'  : transform_labels(test_labels_hh, trans_dict),
         'batch_size'   : batch_size,
         'num_classes'  : num_classes,
+        'norm_function': norm_function.__name__,
         'classes_orig' : sorted(trans_dict.keys()),
         'classes_trans': sorted(trans_dict.values()),
         'train_steps'  : ceil(len(train_labels_hh) / batch_size),
