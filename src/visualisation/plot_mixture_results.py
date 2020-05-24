@@ -23,7 +23,7 @@ target_1_average = [np.mean(y) for y in target_1]
 target_2_average = [np.mean(y) for y in target_2]
 
 x_values = np.arange(0,100.5, 5)
-
+plt.figure(figsize=[8.5,5])
 plt.title('Results for mixture of datasets', fontsize= 16)
 plt.xlabel('Percentage of synthetic data added to handheld data', fontsize=14)
 plt.ylabel('Accuracy', fontsize= 14)
