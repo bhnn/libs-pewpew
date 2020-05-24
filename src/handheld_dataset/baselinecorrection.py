@@ -7,6 +7,9 @@ from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+path = r'/Users/jh/github'
+
+
 def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     """
     Calculates the baseline correction of LIBS spectra and returns corrected
@@ -33,9 +36,15 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     return new.clip(min=0)
 
 
-path = r'/Users/jh/github'
 
 def correct_baseline(path, datasetname):
+    """
+    Saves each dataset (handheld with 12 and 100 minerals) in a new folder with
+    baseline corrected spectra to minimize the runtime of training the models
+    :param:         path to folder containing the dataset
+    :datasetname:   name of the dataset
+    :returns:       Saves two new folders with baseline corrected spectra
+    """
     # create output directory
     if not os.path.exists(os.path.join(path, datasetname +'_corrected')):
         os.makedirs(os.path.join(path, datasetname +'_corrected'))
