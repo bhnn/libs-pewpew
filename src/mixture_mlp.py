@@ -6,6 +6,10 @@ from sklearn.metrics import balanced_accuracy_score
 from utils import (build_model, diagnose_output, prepare_mixture_dataset,
                    print_dataset_info, repeat_and_collate,
                    set_classification_targets)
+import os
+from os.path import join
+
+path = r'/Users/jh/github'
 
 
 def classify(**args):
@@ -13,7 +17,7 @@ def classify(**args):
     repetitions = args['repetitions']
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
-    
+
     # list list of 5% increments ranging from 0% to 100%
     mixture_range = np.arange(0, 1.01, .05)
     results = np.zeros((len(mixture_range), repetitions))
@@ -39,8 +43,7 @@ def classify(**args):
             # evaluate returns (final loss, final acc), thus the [1]
             results[i,j] = model.evaluate(d['test_data'](), steps=d['test_steps'], verbose=1)[1]
     print(results)
-    np.save(f'results/synthetic_influence_target_{cls_target}', results)
-
+    np.save(os.path.join(path, 'libs-pewpew/data/synthetic_influence_target_{cls_target}', results)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -71,6 +74,13 @@ if __name__ == '__main__':
         default=5,
         help='How many epochs to train for',
         dest='epochs'
+    )
+    parser.add_argument(
+        '-n', '--normalisation',
+        type=int,
+        default=2,
+        help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
+        dest='norm_choice'
     )
     args = parser.parse_args()
 
