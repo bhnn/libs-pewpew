@@ -1,3 +1,5 @@
+import sys
+import warnings
 from functools import partial
 from glob import glob
 from math import ceil
@@ -8,15 +10,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sn
 import tensorflow as tf
-import sys
-import warnings
+import yaml
 from keras.utils import to_categorical
+from scipy import sparse
+from scipy.sparse.linalg import spsolve
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.utils import class_weight, shuffle
 from tensorflow.keras import Model, regularizers
 from tensorflow.keras.layers import Concatenate, Dense, Dropout, Input
-from scipy import sparse
-from scipy.sparse.linalg import spsolve
+
 
 def repeat_and_collate(classify_fn, **args):
     """
@@ -146,8 +148,6 @@ def no_normalisation(sample):
     """
     return sample
 
-
-
 def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     """
     Calculates the baseline correction of LIBS spectra and returns corrected
@@ -158,7 +158,7 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     :param niter:   number of iterations
     """
     if np.max(y) <0:
-        warnings.warn('LIBS shot is empty, no positive values')
+        warnings.warn('LIBS shot is empty or invalid, no positive values')
     y = y[:,1].clip(min=0) #remove values < 0 and discard wavelengths
     L = len(y)
     D = sparse.diags([1,-2,1],[0,-1,-2], shape=(L,L-2))
@@ -280,8 +280,7 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
             with np.load(files[i]) as npz_file:
                 label = transform_labels(npz_file['labels'][targets], trans_dict)
                 labels[j]  = to_categorical(label, num_classes) if categorical else label
-                #samples[j] = baseline_als_optimized(y=npz_file['data']) #in case of not using the already baseline corrected spectra
-                #samples[j] = norm_function(samples[j])
+                # discard wavelength dimension from here on, only work with intensity [:,1]
                 samples[j] = norm_function(npz_file['data'][:,1])
 
             i += 1
@@ -303,24 +302,30 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shu
                                     weights and data description
     :raises ValueError:             if dataset_choice is invalid
     """
-    if dataset_choice == 0:
-        data_path = r"/samba/cjh/julia/synthetic_all"
-        data_str = 'synthetic data'
-        data_name = 'synthetic'
-    elif dataset_choice == 1:
-        data_path = r'/Users/jh/github/hh_6'
-        data_str = 'handheld data (6 classes)'
-        data_name = 'hh_6'
-    elif dataset_choice == 2:
-        data_path = r'/Users/jh/github/hh_12'
-        data_str = 'handheld data (12 classes)'
-        data_name = 'hh_12'
-    elif dataset_choice == 3:
-        data_path = r'/Users/jh/github/hh_all'
-        data_str = 'handheld data (100 classes)'
-        data_name = 'hh_all'
-    else:
-        raise ValueError('Invalid dataset parameter')
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            if dataset_choice == 0:
+                data_path = dataset_configs['synth_path']
+                data_str = dataset_configs['synth_str']
+                data_name = dataset_configs['synth_name']
+            elif dataset_choice == 1:
+                data_path = dataset_configs['hh_6_path']
+                data_str = dataset_configs['hh_6_str']
+                data_name = dataset_configs['hh_6_name']
+            elif dataset_choice == 2:
+                data_path = dataset_configs['hh_12_path']
+                data_str = dataset_configs['hh_12_str']
+                data_name = dataset_configs['hh_12_name']
+            elif dataset_choice == 3:
+                data_path = dataset_configs['hh_all_path']
+                data_str = dataset_configs['hh_all_str']
+                data_name = dataset_configs['hh_all_name']
+            else:
+                raise ValueError('Invalid dataset parameter passed to prepare_dataset.')
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
 
     if normalisation == 0:
         norm_function = no_normalisation
@@ -329,8 +334,8 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shu
     elif normalisation == 2:
         norm_function = normalise_minmax
 
-    train_data = sorted(glob(join(data_path, 'train_corrected', '*.npz')))
-    test_data = sorted(glob(join(data_path, 'test_corrected', '*.npz')))
+    train_data = sorted(glob(join(data_path, 'train', '*.npz')))
+    test_data = sorted(glob(join(data_path, 'test', '*.npz')))
 
     train_labels = __get_labels(train_data, target)
     test_labels = __get_labels(test_data, target)
@@ -390,8 +395,14 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
                                     weights and data description
     :raises ValueError:             if dataset_choice is invalid
     """
-    path_hh_12 = r'/Users/jh/github/hh_12'
-    path_synthetic = r'/Volumes/Samsung_T5/synthetic_all'
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            path_hh_12 = dataset_configs['hh_12_path']
+            path_synthetic = dataset_configs['synth_path']
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
 
     if normalisation == 0:
         norm_function = no_normalisation
@@ -402,8 +413,8 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
 
 
     # hh data
-    train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train_corrected', '*.npz'))))
-    test_data_hh = np.array(sorted(glob(join(path_hh_12, 'test_corrected', '*.npz'))))
+    train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train', '*.npz'))))
+    test_data_hh = np.array(sorted(glob(join(path_hh_12, 'test', '*.npz'))))
     train_labels_hh = __get_labels(train_data_hh, target)
     test_labels_hh = __get_labels(test_data_hh, target)
 
@@ -442,7 +453,6 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
     # list of "class" names used for confusion matrices and validity testing. Not always classes, also subgroups or
     # minerals, depending on classification targets
     return {
-
         'dataset_name' : 'mixture synthetic/hh_12',
         'train_data'   : __data_generator(train_data_hh, target, num_classes, batch_size, trans_dict, True, norm_function),
         'eval_data'    : partial(__data_generator, test_data_hh, target, num_classes, batch_size, trans_dict, False, norm_function),
