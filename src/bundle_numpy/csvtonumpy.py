@@ -13,7 +13,7 @@ def convert_to_numpy(datasetname):
     for f in tqdm(files, desc='npz-' + datasetname):
         if os.path.getsize(f) > 250000: # > 250 kB
             data = np.loadtxt(f, skiprows=1, delimiter=',')
-            mineral_id, mineral_class, mineral_subgroup, _, _ = f.split('/')[-1].split('_')
+            mineral_id, mineral_class, mineral_subgroup, _, _ = f.split(os.sep)[-1].split('_')
             filename = f[:-4] # filename without .csv
             labels = np.asarray((mineral_class, mineral_subgroup, mineral_id)).astype(int)
             np.savez_compressed(filename, data=data, labels=labels)

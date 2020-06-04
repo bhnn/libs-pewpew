@@ -4,6 +4,7 @@ from functools import partial
 from glob import glob
 from math import ceil
 from ntpath import basename
+from os import sep
 from os.path import join
 
 import matplotlib.pyplot as plt
@@ -211,13 +212,13 @@ def get_64shot_transition_matrix(test_filepaths):
     # iterate over all files (sorted alphabetically)
     while i < len(test_filepaths):
         # extract id and measure point
-        m_id, _, _, measure_point, _ = test_filepaths[i].split('/')[-1].split('_')
+        m_id, _, _, measure_point, _ = test_filepaths[i].split(sep)[-1].split('_')
         split = list()
         # look ahead for all other files of same measure point
         # save them to list of mps, then continue iterating after last current sample of mp
         # reduces runtime to O(n) instead of O(n²)
         for j in range(i, len(test_filepaths)):
-            m_id_j, _, _, mp_j, _ = test_filepaths[j].split('/')[-1].split('_')
+            m_id_j, _, _, mp_j, _ = test_filepaths[j].split(sep)[-1].split('_')
             if m_id == m_id_j and measure_point == mp_j:
                 split.append(test_filepaths[j])
                 i += 1
