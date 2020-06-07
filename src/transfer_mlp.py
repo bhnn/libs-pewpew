@@ -13,7 +13,7 @@ from utils import (build_model, diagnose_output, prepare_dataset,
 def classify(**args):
     """
     Main method that prepares dataset, builds model, executes training and displays results.
-    
+
     :param args: keyword arguments passed from cli parser
     """
     # only allow print-outs if execution has no repetitions
@@ -23,7 +23,8 @@ def classify(**args):
     d = prepare_dataset(
         0,
         cls_target,
-        args['batch_size'])
+        args['batch_size'],
+        args['norm_choice'])
 
     print('\n\tTask: Classify «{}» using «{}»'.format(cls_str, d['data_str']))
     print_dataset_info(d)
@@ -45,13 +46,14 @@ def classify(**args):
     d = prepare_dataset(
         2,
         cls_target,
-        args['batch_size'])
+        args['batch_size'],
+        args['norm_choice'])
     print_dataset_info(d)
 
     # make layers untrainable and remove classification layer, then train new last layer on handheld data
     for l in model.layers[:-1]:
         l.trainable = False
-    
+
     if allow_print:
         plot_model(model, to_file='img/transfer_mlp_pre.png')
 
@@ -80,7 +82,7 @@ def classify(**args):
 
     if allow_print:
         diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
-    
+
     return balanced_accuracy_score(d['test_labels'], pred.argmax(axis=1))
 
 
@@ -120,6 +122,13 @@ if __name__ == '__main__':
         default=5,
         help='How many epochs to train for',
         dest='epochs'
+    )
+    parser.add_argument(
+        '-n', '--normalisation',
+        type=int,
+        default=2,
+        help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
+        dest='norm_choice'
     )
     args = parser.parse_args()
 
