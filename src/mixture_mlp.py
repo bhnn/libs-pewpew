@@ -27,7 +27,8 @@ def classify(**args):
         d = prepare_mixture_dataset(
         cls_target,
         args['batch_size'],
-        mixture_pct=cut)
+        mixture_pct=cut,
+        args['norm_choice'])
 
         for j in range(repetitions):
             model = build_model(0, d['num_classes'], name='baseline_mlp', new_input=True)
@@ -43,7 +44,7 @@ def classify(**args):
             # evaluate returns (final loss, final acc), thus the [1]
             results[i,j] = model.evaluate(d['test_data'](), steps=d['test_steps'], verbose=1)[1]
     print(results)
-    np.save(os.path.join(path, 'libs-pewpew/data/synthetic_influence_target_{cls_target}', results)
+    np.save(os.path.join(path, 'libs-pewpew/data/synthetic_influence_target_{cls_target}', results))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
