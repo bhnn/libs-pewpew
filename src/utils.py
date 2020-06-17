@@ -175,7 +175,7 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     return new.clip(min=0)
 
 
-def diagnose_output(y_true, y_pred, class_ids):
+def diagnose_output(y_true, y_pred, class_ids, show=True, file_name=None):
     """
     Calculates sklearn.metrics.classification_report and confusion matrix for provided data and visualises them.
 
@@ -189,13 +189,17 @@ def diagnose_output(y_true, y_pred, class_ids):
     matrix = confusion_matrix(y_true, y_pred, labels=class_ids)
     matrix = matrix.astype('float') / matrix.sum(axis=1)[:, np.newaxis]
 
-    plt.figure(figsize = (10,7))
+    fig = plt.figure(figsize = (10,7))
     sn.heatmap(matrix, annot=True, fmt='.2f') # xticklabels=target_names, yticklabels=target_names)
     plt.gca().tick_params(axis='y', rotation=45)
     plt.title('Confusion matrix (normalised)')
     plt.xlabel('Predicted label')
     plt.ylabel('True label')
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        plt.savefig(join('results', f'{file_name}.pdf'), bbox_inches='tight')
+        plt.close(fig)
 
 def get_64shot_transition_matrix(test_filepaths):
     """
@@ -287,7 +291,7 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
             i += 1
         yield samples, labels
 
-def prepare_dataset(dataset_choice, target, batch_size, normalisation, train_shuffle_repeat=True, categorical_labels=True, mp_heatmap=False):
+def prepare_dataset(dataset_choice, target, batch_size, normalisation=2, train_shuffle_repeat=True, categorical_labels=True, mp_heatmap=False):
     """
     Provides data generators, labels and other information for selected dataset.
 
