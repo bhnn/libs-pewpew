@@ -1,4 +1,5 @@
 import argparse
+from os.path import join
 
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
@@ -6,30 +7,34 @@ from sklearn.metrics import balanced_accuracy_score
 from utils import (build_model, diagnose_output, prepare_mixture_dataset,
                    print_dataset_info, repeat_and_collate,
                    set_classification_targets)
-import os
-from os.path import join
 
 path = r'/Users/jh/github'
 
 
 def classify(**args):
+    """
+    Main method that prepares dataset, builds model, executes training and displays results.
+
+    :param args: keyword arguments passed from cli parser
+    """
     batch_size = 64
     repetitions = args['repetitions']
     # determine classification targets and parameters to construct datasets properly
     cls_target, cls_str = set_classification_targets(args['cls_choice'])
 
-    # list list of 5% increments ranging from 0% to 100%
+    # list of 5% increments ranging from 0% to 100%
     mixture_range = np.arange(0, 1.01, .05)
     results = np.zeros((len(mixture_range), repetitions))
 
     for i,cut in enumerate(mixture_range):
         print(f'cut: {cut}')
         d = prepare_mixture_dataset(
-        cls_target,
-        args['batch_size'],
-        mixture_pct=cut,
-        args['norm_choice'])
+            cls_target,
+            args['batch_size'],
+            mixture_pct=cut,
+            normalisation=args['norm_choice'])
 
+        # perform #repetitions per 5% dataset mixture
         for j in range(repetitions):
             model = build_model(0, d['num_classes'], name='baseline_mlp', new_input=True)
             model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
@@ -41,10 +46,9 @@ def classify(**args):
                 epochs=args['epochs'],
                 verbose=0,
                 class_weight=d['class_weights'])
-            # evaluate returns (final loss, final acc), thus the [1]
-            results[i,j] = model.evaluate(d['test_data'](), steps=d['test_steps'], verbose=1)[1]
+            results[i,j] = balanced_accuracy_score(d['test_labels'], model.predict(d['test_data'](), steps=d['test_steps']).argmax(axis=1))
     print(results)
-    np.save(os.path.join(path, 'libs-pewpew/data/synthetic_influence_target_{cls_target}', results))
+    np.save(join(path, 'libs-pewpew/data/synthetic_influence_target_{cls_target}', results))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -65,6 +69,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-c', '--classification',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
         dest='cls_choice'
@@ -79,6 +84,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-n', '--normalisation',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
         dest='norm_choice'
