@@ -84,6 +84,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d', '--dataset',
         type=int,
+        choices=[0, 1, 2, 3],
         default=1,
         help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
         dest='dataset_choice'
@@ -91,6 +92,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-c', '--classification',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
         dest='cls_choice'

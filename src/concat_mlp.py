@@ -47,7 +47,7 @@ def classify(**args):
 
     # load handheld dataset for evaluation
     d = prepare_dataset(
-        1, # any handheld
+        2, # any handheld
         cls_target,
         args['batch_size'])
     print_dataset_info(d)
@@ -93,6 +93,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-c', '--classification',
         type=int,
+        choices=[0, 1, 2, 3],
         default=2,
         help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
         dest='cls_choice'

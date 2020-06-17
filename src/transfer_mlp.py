@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 
 from sklearn.metrics import balanced_accuracy_score
 from tensorflow.keras import Model
@@ -44,7 +45,7 @@ def classify(**args):
 
     del d
     d = prepare_dataset(
-        2,
+        args['dataset_choice'],
         cls_target,
         args['batch_size'],
         args['norm_choice'])
@@ -70,7 +71,7 @@ def classify(**args):
     model.fit(
         d['train_data'],
         steps_per_epoch=d['train_steps'],
-        epochs=args['epochs'],
+        epochs=args['epochs']*2,
         verbose=1,
         class_weight=d['class_weights'])
     print('Evaluate ...')
@@ -80,8 +81,8 @@ def classify(**args):
     print('Test ...')
     pred = model.predict(d['test_data'], steps=d['test_steps'])
 
-    if allow_print:
-        diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
+    diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'], show=False,
+        file_name=f'heatmap_transfer_{datetime.now().hour}_{datetime.now().minute}')
 
     return balanced_accuracy_score(d['test_labels'], pred.argmax(axis=1))
 
@@ -105,13 +106,15 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d', '--dataset',
         type=int,
+        choices=[2, 3],
         default=1,
-        help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
+        help='Which dataset(s) to use. 2=HH12, 3=HH100',
         dest='dataset_choice'
     )
     parser.add_argument(
         '-c', '--classification',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
         dest='cls_choice'
@@ -126,6 +129,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-n', '--normalisation',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
         dest='norm_choice'

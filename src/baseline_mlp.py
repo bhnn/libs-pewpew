@@ -33,7 +33,6 @@ def classify(**args):
     if allow_print:
         model.summary()
         print('')
-        plot_model(model, to_file='img/baseline_mlp.png')
 
     # callback to log data for TensorBoard
     # tb_callback = TensorBoard(log_dir='./results', histogram_freq=0, write_graph=True, write_images=True)
@@ -53,7 +52,7 @@ def classify(**args):
     pred = model.predict(d['test_data'], steps=d['test_steps'])
 
     if allow_print:
-        diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'], allow_print)
+        diagnose_output(d['test_labels'], pred.argmax(axis=1), d['classes_trans'])
 
     return balanced_accuracy_score(d['test_labels'], pred.argmax(axis=1))
 
@@ -77,13 +76,15 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d', '--dataset',
         type=int,
-        default=1,
+        choices=[0, 1, 2, 3],
+        default=2,
         help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
         dest='dataset_choice'
     )
     parser.add_argument(
         '-c', '--classification',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
         dest='cls_choice'
@@ -98,6 +99,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-n', '--normalisation',
         type=int,
+        choices=[0, 1, 2],
         default=0,
         help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
         dest='norm_choice'

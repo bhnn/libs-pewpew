@@ -79,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-c', '--classification',
         type=int,
+        choices=[0, 1, 2],
         default=2,
         help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
         dest='cls_choice'
