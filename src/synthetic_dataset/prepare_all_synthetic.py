@@ -1,11 +1,11 @@
 from collections import defaultdict
-from os.path import join
+from os import makedirs
+from os.path import exists, join
 from pathlib import Path
 from shutil import copy2
 
 import numpy as np
 from tqdm import tqdm
-
 
 # Situation: generated 352,692 synthetic mineral spectrums
 # Distribution minerals: {11: 29500, 19: 29500, 26: 29500, 28: 29500, 35: 29500, 41: 29500, 73: 29500, 80: 29453, 86: 29365, 88: 29210, 97: 29137, 98: 29027}
@@ -35,13 +35,22 @@ relabel_dict = {m_id : [0]*5 for m_id in [11, 19, 26, 28, 35, 41, 73, 80, 86, 88
 # remove worker_thread-id designation from filename and move it into split folder
 for lst, split in [(sorted(test),'test'), (sorted(eva),'eval'), (sorted(train),'train')]:
     for file_obj in tqdm(lst, desc='cp_'+split, unit_scale=True):
+        # grab info to construct new filename and path
         info = str(file_obj.name).split('_')
         m_id = int(info[3])
         conf = int(info[6])
         new_nr = relabel_dict[m_id][conf]
-        new_name = '{}_{:05}.npy'.format('_'.join(info[3:-1]), int(new_nr))
-        dest = join('E:\Data\LIBSqORE\synthetic_all', split, new_name)
-        copy2(str(file_obj), dest)
+        new_name = '{}_{:05}'.format('_'.join(info[3:-1]), int(new_nr))
+        dest_dir = join('E:\Data\LIBSqORE\synthetic_all', split)
+
+        if not exists(dest_dir):
+            makedirs(dest_dir)
+        dest = join(dest_dir, new_name)
+
+        # convert to npz and store at destination
+        data, labels = np.load(file_obj, allow_pickle=True)
+        np.savez_compressed(dest, data=data, labels=labels)
+        # copy2(str(file_obj), dest)
         relabel_dict[m_id][conf] += 1
         files_to_delete.append(str(file_obj))
 
