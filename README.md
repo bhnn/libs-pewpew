@@ -24,9 +24,15 @@ The synthetic dataset has to be prepared to be useful for training an ANN.
 #### Handheld dataset:
 The handheld dataset has to be prepared to be useful for training an ANN, as it is currently in different folders etc.
 
--organise hh dataset
-???
-- python3 src/handheld_dataset/baselinecorrection.py (change path)
+Organise handheld dataset in two folders: hh_12 and hh_all, also change filenames
+- python3 src/handheld_dataset/organise_hh_dataset.py
+Convert csv files to npz files, train test split
+- csv to numpy (also train, test split)
+As part of the preprocessing: baseline correction of all spectra (to save space, delete old folders)
+- python3 src/handheld_dataset/baselinecorrection.py (expects the folders "train_uncorrected" and "test_uncorrected")
+
+
+### Artificial Neural Networks:
 
 #### Mixture of handheld and synthetic dataset with baseline MLP:
 To evaluate the influence of the generated synthetic data on the accuracy of the trained ANN, the following code will train a baseline MLP with a mixture of the handheld dataset with the synthetic dataset from 100% handheld + 0% synthetic to 100 % handheld + 100% synthetic.
@@ -45,19 +51,13 @@ The results can be visualized:
 - python 3 baseline_mlp.py -r 3 -e 5 -d 2 -c 0/1/2 -n 0/1/2
 
 
-
-
-
-
-
-
 ### Visualizations
 
 All visualisations will be saves in libs-pewpew/data/visualisations
 
 #### Plot average Spectra
 
-Calculates and saves average synthetic and average handheld spectra for the 12 minerals
+Calculates and saves average synthetic and average handheld spectra for the 12 minerals:
 - python3 src/visualisation/average_spectra.py
 
 To plot the handheld dataset:
