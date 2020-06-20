@@ -24,7 +24,7 @@ def plot_syn_hh():
     Visualizes the average spectrum of 4 minerals from the handheld dataset and the synthetic dataset
     :input:     average spectra
     :returns:   8 subplots with the average spectrum for each of the minerals
-                Saves the plots in data/average_spectra_hh_syn.png
+                Saves the plots in data/average_spectra_hh_syn as png and pdf
     """
 
     average_handheld =  np.load(os.path.join(path, 'data/average_spectra_handheld.npy'))
@@ -54,8 +54,7 @@ def plot_syn_hh():
             print('I',i)
             axs[i,j].yaxis.set_visible(False) # Hide y axis
             axs[i,j].set_title(mineral_names[(i+j*4)], position=(0.85, 0.3), fontsize=10) #add mineralnames
-    plt.savefig(os.path.join(r'/Users/jh/github/libs-pewpew/data/average_spectra_hh_syn.png'))
-    plt.savefig(os.path.join(r'/Users/jh/github/libs-pewpew/data/average_spectra_hh_syn.pdf'))
-    #plt.show()
+    plt.savefig(os.path.join(r'/Users/jh/github/libs-pewpew/data/visualisations/average_spectra_hh_syn.png'))
+    plt.savefig(os.path.join(r'/Users/jh/github/libs-pewpew/data/visualisations/average_spectra_hh_syn.pdf'))
 
 plot_syn_hh()

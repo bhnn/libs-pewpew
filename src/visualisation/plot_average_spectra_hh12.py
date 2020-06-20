@@ -9,8 +9,13 @@ from scipy.sparse.linalg import spsolve
 import pandas as pd
 import os
 from tqdm import tqdm
+import yaml
 
-path = r'/Users/jh/github'
+with open('config/datasets.yaml') as cnf:
+    dataset_configs = yaml.safe_load(cnf)
+
+path = dataset_configs['repo_path']
+
 
 minerals_12 = [ (26, 'Chalcopyrite'),
                 (98, 'Tetrahedrite'),
@@ -29,48 +34,14 @@ minerals_12_id = [a_tuple[0] for a_tuple in minerals_12]
 mineral_names = [a_tuple[1] for a_tuple in minerals_12]
 
 
-def save_average_minerals():
-    """
-    Saves a numpy file containing the average spectra of all 12 minerals in the hh_12 test dataset
-    for the visualisation of the different spectra
-    :returns: saves numpy file in libs-pewpew/data/average_spectra
-    """
-    average_samples=[]
-    for m_id in minerals_12_id:
-        print(m_id)
-        m_id = '{0:04d}'.format(m_id)
-        files = sorted(glob.glob(os.path.join(path, 'hh_12/test_corrected', m_id+'*.npz')))
-        min_mp = int(files[0][-13:-10])
-        max_mp = int(files[-1][-13:-10])
-        for mp in range(min_mp, max_mp+1):
-            sample = []
-            mp = '{0:03d}'.format(mp)
-            mp = str(mp)
-            files_mp = [f for f in files if f.find(mp,-13,-10) != -1]
-            for f in files_mp:
-                with np.load(f) as npz_file:
-                    data = npz_file['data'][:,1] #data without wavelength
-                    data = data / np.max(data) # normalisation
-                    data = data.clip(min=0) #remove values < 0
-                    sample.append(data)
-                    if len(sample) > 1:
-                        sample = np.mean(sample, axis=0)
-                        sample = [list(sample)]
-            average_samples.append(sample[0])
-
-    np.save(os.path.join(path, 'libs-pewpew/data/average_spectra'), average_samples)
-
-
-save_average_minerals()
-
 
 def plot_several():
     """
     Plots 12 average spectra below one another and saves the plot
-    :returns: Saves the plot in libs-pewpew/data/several_spectra.png
+    :returns: Saves the plot in libs-pewpew/data/several_spectra as png and pdf
     """
 
-    average_samples =  np.load(os.path.join(path, 'libs-pewpew/data/average_spectra.npy'))
+    average_samples =  np.load(os.path.join(path, 'data/average_spectra_handheld.npy'))
     x_values = np.arange(180, 961, 0.1)
 
     fig, axs = plt.subplots(12, sharex=True, figsize=(7,7))
@@ -97,6 +68,8 @@ def plot_several():
         axs[i].yaxis.set_visible(False) # Hide y axis
         axs[i].set_title(mineral_names[i], position=(0.85, 0.3), fontsize=10) #add mineralnames
 
-    plt.savefig(os.path.join(r'/Users/jh/github/libs-pewpew/data/average_spectra_plot.png'))
+    plt.savefig(os.path.join(path, 'data/visualisations/average_spectra_hh12.png'))
+    plt.savefig(os.path.join(path, 'data/visualisations/average_spectra_hh12.pdf'))
+
 
 plot_several()
