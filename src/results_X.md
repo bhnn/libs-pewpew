@@ -1,4 +1,4 @@
-#### Baseline MLP: 5 repetitions, 15 epochs
+#### Baseline MLP: 5 repetitions, 15 epochs, min max, no baseline correction
 
 ##### Dataset: 6 minerals
 
@@ -101,5 +101,56 @@ Average balanced accuracy:	0.69042 (± 0.00882)
 
 ##### Dataset synthetic:
 
+*
+*
+*
 
 ##### Mixture model:
+
+*
+*
+*
+
+
+
+#### Baseline MLP: 5 repetitions, 10 epochs, snv normalisation and baseline correction
+
+* 	Task: Classify 4 «mineral classes » using «handheld data (6 minerals)»
+
+Results of experiment:
+Run 01 balanced accuracy:	0.74803
+Run 02 balanced accuracy:	0.72047
+Run 03 balanced accuracy:	0.75036
+Run 04 balanced accuracy:	0.75219
+Run 05 balanced accuracy:	0.75573
+Average balanced accuracy:	0.74535 (± 0.0127)
+
+#### Baseline MLP: 5 repetitions, 15 epochs, no normalisation, only baseline correction
+
+* 	Task: Classify 4 «mineral classes » using «handheld data (6 minerals)»
+
+
+
+#### Baseline MLP: 5 repetitions, 15 epochs, minmax normalisation and baseline correction
+
+* 	Task: Classify 4 «mineral classes » using «handheld data (6 minerals)»
+
+Results of experiment:
+Run 01 balanced accuracy:	0.76533
+Run 02 balanced accuracy:	0.77584
+Run 03 balanced accuracy:	0.74695
+Run 04 balanced accuracy:	0.7396
+Run 05 balanced accuracy:	0.75099
+Average balanced accuracy:	0.75574 (± 0.01308)
+
+#Baseline MLP: 5 repetitions, 15 epochs, no normalisation but baseline correction
+
+* 	Task: Classify 4 «mineral classes » using «handheld data (6 minerals)»
+
+Results of experiment:
+Run 01 balanced accuracy:	0.26028
+Run 02 balanced accuracy:	0.26075
+Run 03 balanced accuracy:	0.25887
+Run 04 balanced accuracy:	0.26113
+Run 05 balanced accuracy:	0.25607
+Average balanced accuracy:	0.25942 (± 0.00184)
