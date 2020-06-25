@@ -11,10 +11,6 @@ import os
 from tqdm import tqdm
 import yaml
 
-with open('config/datasets.yaml') as cnf:
-    dataset_configs = yaml.safe_load(cnf)
-
-path = dataset_configs['repo_path']
 
 
 def only_baseline(y, lam=102, p=0.01, niter=10):
@@ -41,13 +37,14 @@ def only_baseline(y, lam=102, p=0.01, niter=10):
     return z
 
 
-def plot_spectra_with_baseline():
+def plot_spectra_with_baseline(repo_path):
     """
     Plots one spectrum of chalcopyrite and its calculated baseline
-    Saves plot in libs-pewpew/data/visualisations/spectrum_baseline as png and pdf
+    :param repo_path:   path to repository
+    :returns:           Saves plot in /data/visualisations/spectrum_baseline as png and pdf
     """
 
-    with np.load(os.path.join(path, 'data/chalcopyrit_uncorrected.npy')) as npy_file:
+    with np.load(os.path.join(repo_path, 'data/chalcopyrit_uncorrected.npy')) as npy_file:
         x_values =  npy_file['data'][:,0]
         sample =    npy_file['data'][:,1]
 
@@ -61,24 +58,23 @@ def plot_spectra_with_baseline():
     plt.legend(fontsize=13)
     plt.axhline(linewidth=0.5, color='black')
 
-    plt.savefig(os.path.join(path,'data/visualisations/spectrum_baseline.png'))
-    plt.savefig(os.path.join(path,'data/visualisations/spectrum_baseline.pdf'))
+    plt.savefig(os.path.join(repo_path,'data/visualisations/spectrum_baseline.png'))
+    plt.savefig(os.path.join(repo_path,'data/visualisations/spectrum_baseline.pdf'))
 
 
-plot_spectra_with_baseline()
 
-def plot_spectra_baselinecorrection():
+def plot_spectra_baselinecorrection(repo_path):
     """
     Plots one spectrum of chalcopyrite with baseline and the baseline corrected spectrum
-    Saves figure in libs-pewpew/data/visualisations/spectrum_corrected_baseline as png and pdf
+    :param repo_path:   path to repository
+    :returns:           Saves figure in libs-pewpew/data/visualisations/spectrum_corrected_baseline as png and pdf
     """
 
-
-    with np.load(os.path.join(path, 'data/chalcopyrit_uncorrected.npy')) as npy_file:
+    with np.load(os.path.join(repo_path, 'data/chalcopyrit_uncorrected.npy')) as npy_file:
         x_values = npy_file['data'][:,0]
         sample = npy_file['data'][:,1]
 
-    with np.load(os.path.join(path, 'data/chalcopyrit_corrected.npy')) as npy_file:
+    with np.load(os.path.join(repo_path, 'data/chalcopyrit_corrected.npy')) as npy_file:
         baselinecorrection = npy_file['data'][:,1]
 
     baseline = only_baseline(sample)
@@ -92,8 +88,20 @@ def plot_spectra_baselinecorrection():
     plt.title('Average LIBS spectra of one measurepoint - Mineral: Chalcopyrite', fontsize= 16, pad=15)
     plt.legend(fontsize=13)
     plt.axhline(linewidth=0.5, color='black')
-    plt.savefig(os.path.join(path,'data/visualisations/spectrum_corrected_baseline.png'))
-    plt.savefig(os.path.join(path,'data/visualisations/spectrum_corrected_baseline.pdf'))
+    plt.savefig(os.path.join(repo_path,'data/visualisations/spectrum_corrected_baseline.png'))
+    plt.savefig(os.path.join(repo_path,'data/visualisations/spectrum_corrected_baseline.pdf'))
 
 
-plot_spectra_baselinecorrection()
+
+if __name__ == '__main__':
+
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            repo_path = dataset_configs['repo_path']
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
+
+    plot_spectra_with_baseline(repo_path)
+    plot_spectra_baselinecorrection(repo_path)

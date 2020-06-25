@@ -11,37 +11,16 @@ import os
 from tqdm import tqdm
 import yaml
 
-with open('config/datasets.yaml') as cnf:
-    dataset_configs = yaml.safe_load(cnf)
 
-path = dataset_configs['repo_path']
-
-
-minerals_12 = [ (26, 'Chalcopyrite'),
-                (98, 'Tetrahedrite'),
-                (19, 'Bornite'),
-                (41, 'Cuprite'),
-                (28, 'Chalcotrichite'),
-                (97, 'Tenorite'),
-                (88, 'Rosasite'),
-                (11, 'Azurit'),
-                (73, 'Malachite'),
-                (86, 'Pseudomalachite'),
-                (80, 'Olivenite'),
-                (35, 'Cornetite')]
-
-minerals_12_id = [a_tuple[0] for a_tuple in minerals_12]
-mineral_names = [a_tuple[1] for a_tuple in minerals_12]
-
-
-
-def plot_several():
+def plot_several(repo_path, mineral_names):
     """
-    Plots 12 average spectra below one another and saves the plot
-    :returns: Saves the plot in libs-pewpew/data/several_spectra as png and pdf
+    Plots average spectra of 12 minerals for comparison below one another and saves the plot
+    :param repo_path:       path to repository
+    :param mineral_names:   Names of the minerals
+    :returns:               Saves the plot in libs-pewpew/data/several_spectra as png and pdf
     """
 
-    average_samples =  np.load(os.path.join(path, 'data/average_spectra_handheld.npy'))
+    average_samples =  np.load(os.path.join(repo_path, 'data/average_spectra_handheld.npy'))
     x_values = np.arange(180, 961, 0.1)
 
     fig, axs = plt.subplots(12, sharex=True, figsize=(7,7))
@@ -68,8 +47,23 @@ def plot_several():
         axs[i].yaxis.set_visible(False) # Hide y axis
         axs[i].set_title(mineral_names[i], position=(0.85, 0.3), fontsize=10) #add mineralnames
 
-    plt.savefig(os.path.join(path, 'data/visualisations/average_spectra_hh12.png'))
-    plt.savefig(os.path.join(path, 'data/visualisations/average_spectra_hh12.pdf'))
+    plt.savefig(os.path.join(repo_path, 'data/visualisations/average_spectra_hh12.png'))
+    plt.savefig(os.path.join(repo_path, 'data/visualisations/average_spectra_hh12.pdf'))
 
 
-plot_several()
+
+
+if __name__ == '__main__':
+
+
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            repo_path = dataset_configs['repo_path']
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
+
+    mineral_names = ['Chalcopyrite', 'Tetrahedrite', 'Bornite', 'Cuprite', 'Chalcotrichite', 'Tenorite', 'Rosasite', 'Azurit', 'Malachite', 'Pseudomalachite', 'Olivenite', 'Cornetite']
+
+    plot_several(repo_path, mineral_names)
