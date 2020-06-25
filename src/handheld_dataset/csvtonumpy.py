@@ -65,15 +65,13 @@ def train_test_split(datasetpath, dataset_id):
                 shutil.move(f, os.path.join(datasetpath, 'train_uncorrected'))
 
 
-if main == 'name':
+if __main__ == '__name__':
 
     with open('config/datasets.yaml') as cnf:
         dataset_configs = yaml.safe_load(cnf)
         try:
-                hh_all_path = dataset_configs['hh_all_path']
-                hh_12_path = dataset_configs['hh_12_path']
-            else:
-                raise ValueError('Invalid dataset parameter passed to prepare_dataset.')
+            hh_all_path = dataset_configs['hh_all_path']
+            hh_12_path = dataset_configs['hh_12_path']
         except KeyError as e:
             print(f'Missing dataset config key: {e}')
             sys.exit(1)
