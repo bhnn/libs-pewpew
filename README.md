@@ -27,13 +27,15 @@ The synthetic dataset has to be prepared to be useful for training an ANN.
 #### Handheld dataset:
 The handheld dataset has to be prepared to be useful for training an ANN, as it is currently in different folders etc.
 
-Organise handheld dataset in two folders: hh_12 and hh_all, Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv
+Organise handheld dataset in two folders: hh_12 and hh_all, Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv:
 - python3 src/handheld_dataset/organise_hh_dataset.py
 
-Convert csv files to npz files, train test split while not seperating measure points
+
+Convert csv files to npz files, train test split while not seperating measure points:
 - python3 src/handheld_dataset/csvtonumpy.py
 
-As part of the preprocessing: baseline correction of all spectra (to save space, delete old folders)
+
+As part of the preprocessing: baseline correction of all spectra (to save space, delete old folders):
 - python3 src/handheld_dataset/baselinecorrection.py
 
 
@@ -54,6 +56,14 @@ The results can be visualized:
 - change -c for three classification targets and -n for three normalisation methods
 - 3 repetitions, 5 epochs, handheld dataset with 12 minerals + synthetic dataset with 12 minerals
 - python 3 baseline_mlp.py -r 3 -e 5 -d 2 -c 0/1/2 -n 0/1/2
+
+#### How to run different models:
+
+- Baseline MLP
+- ...
+
+### Heatmap Paradigm
+
 
 
 ### Visualizations
@@ -84,15 +94,4 @@ Visualisation of uncorrected spectrum, the baseline and the corrected spectrum
 
 #### Minimum and maximum amount of spectra in the dataset
 
--python3 src/visualisation/minmaxdataset.py
-
-
-
-
-TODO:
-- handheld_dataset: organise_hh_dataset change paths
-- handheld dataset: delete "organise all minerals"
-- bundle numpy: csvtonumpy muss in handheld order und restliche files löschen oder?
-- was machen die files in "numpy_minerals"?
-- ordner "synthetic_dataset" muss nochmal durchgegangen werden
-- welche files können im src weg? Welche models haben wir nicht benutzt? Andere files auch nochmal überprüfen
+- python3 src/visualisation/minmaxdataset.py
