@@ -10,7 +10,10 @@ A synthetic dataset can be generated with the code below to evaluate a potential
 
 To complement the handheld dataset, a synthetic dataset can be generated to support the given but rather small dataset. It is based on the atomic composition of the elements of 12 minerals (see data/synthetic_minerals_raw.csv).
 
-- Code to generate this
+
+- prepare_source_list.py
+-
+-
 
 
 #### Prepare the synthetic dataset:
@@ -26,10 +29,12 @@ The handheld dataset has to be prepared to be useful for training an ANN, as it 
 
 Organise handheld dataset in two folders: hh_12 and hh_all, Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv
 - python3 src/handheld_dataset/organise_hh_dataset.py
+
 Convert csv files to npz files, train test split while not seperating measure points
-- csv to numpy (also train, test split)
+- python3 src/handheld_dataset/csvtonumpy.py
+
 As part of the preprocessing: baseline correction of all spectra (to save space, delete old folders)
-- python3 src/handheld_dataset/baselinecorrection.py (expects the folders "train_uncorrected" and "test_uncorrected")
+- python3 src/handheld_dataset/baselinecorrection.py
 
 
 ### Artificial Neural Networks:

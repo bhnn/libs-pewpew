@@ -4,65 +4,34 @@ from shutil import copy2
 
 import numpy as np
 from tqdm import tqdm
+import yaml
 
-minerals_12 = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'), # azurite
-            (26, 'LIBS028 LIBS029 LIBS030 LIBS031 LIBS032 LIBS033 LIBS034 LIBS035 LIBS036 LIBS037 LIBS038 LIBS039'), # chalcopyrite
-            (41, 'cupri LIBS044 LIBS045 LIBS046 LIBS047 LIBS048 LIBS049 LIBS051 LIBS198 LIBS199 LIBS200 LIBS201 LIBS202 LIBS203'), # cuprite
-            (73, 'LIBS059 LIBS060 LIBS061 LIBS062 LIBS063 LIBS064 LIBS065 LIBS066 LIBS067 LIBS068 LIBS069 LIBS070 LIBS071 LIBS072 LIBS073 LIBS074 LIBS075'), # malachite
-            (80, 'oliveni LIBS077 LIBS078 LIBS079 LIBS135'), # olivenite
-            (98, 'tetrahedr LIBS088 LIBS089'), # tetrahedrite
-            (28, 'chalcotri LIBS040'), # chalcotrichite
-            (97, 'tenori LIBS155'), # tenorite
-            (88, 'rosasi LIBS192'), # rosasite
-            (19, 'borni LIBS021 LIBS144'), # bornite
-            (86, 'pseudomalachi LIBS081 LIBS082 LIBS175'), # pseudomalachite
-            (35, 'corneti LIBS139') # cornetite
-        ]
 
-minerals_6 = [(11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'), # azurite
-                 (22, 'LIBS023 LIBS025 LIBS027 LIBS183'),
-                 (26, 'LIBS028 LIBS029 LIBS030 LIBS031 LIBS032 LIBS033 LIBS034 LIBS035 LIBS036 LIBS037 LIBS038 LIBS039'), # chalcopyrite
-                 (30, 'LIBS041'), (73, 'LIBS059 LIBS060 LIBS061 LIBS062 LIBS063 LIBS064 LIBS065 LIBS066 LIBS067 LIBS068 LIBS069 LIBS070 LIBS071 LIBS072 LIBS073 LIBS074 LIBS075'), # malachite
-                 (98, 'tetrahedr LIBS088 LIBS089'), # tetrahedrite
-                 ]
-
-minerals_all = [(1, 'LIBS105'), (2, 'LIBS005 LIBS119'), (3, 'LIBS103'), (4, 'LIBS121'), (5, 'LIBS148'), (6, 'LIBS107'), (7, 'LIBS101'), (8, 'LIBS104'), (9, 'LIBS106'), (10, 'LIBS166'),
-            (11, 'LIBS002 LIBS006 LIBS007 LIBS008 LIBS009 LIBS010 LIBS011 LIBS012 LIBS013 LIBS014 LIBS015 LIBS016 LIBS017 LIBS018 LIBS019 LIBS020'),
-            (12, 'LIBS143'), (13, 'LIBS123'), (14, 'LIBS168'), (15, 'LIBS120'), (16, 'LIBS140'), (17, 'LIBS154'), (18, 'LIBS125'), (19, 'borni LIBS021 LIBS144'),  (20, 'LIBS170'),
-            (21, 'LIBS022 LIBS164'), (22, 'LIBS023 LIBS025 LIBS027 LIBS183'), (23, 'LIBS117'), (24, 'LIBS137'),
-            (26, 'LIBS028 LIBS029 LIBS030 LIBS031 LIBS032 LIBS033 LIBS034 LIBS035 LIBS036 LIBS037 LIBS038 LIBS039'),
-            (28, 'chalcotri LIBS040'), (29, 'LIBS153'), (30, 'LIBS041'), (31, 'LIBS115'), (32, 'LIBS159'), (33, 'LIBS162'), (34, 'LIBS126'),
-            (35, 'corneti LIBS139'),  (36, 'LIBS127'), (37, 'LIBS167'), (38, 'LIBS185'), (39, 'LIBS187'), (40, 'LIBS165'),
-            (41, 'cupri LIBS044 LIBS045 LIBS046 LIBS047 LIBS048 LIBS049 LIBS051 LIBS198 LIBS199 LIBS200 LIBS201 LIBS202 LIBS203'), # cuprite
-            (42, 'LIBS128'), (43, 'LIBS145'), (44, 'LIBS118'), (45, 'LIBS055'), (46, 'LIBS097'), (47, 'LIBS161'), (49, 'LIBS099'), (50, 'LIBS138'), (52, 'LIBS174'),
-            (53, 'LIBS172'), (54, 'LIBS136'), (55, 'LIBS109'), (56, 'LIBS152'), (57, 'LIBS188'), (58, 'LIBS163'), (59, 'LIBS191'), (60, 'LIBS122'),
-            (61, 'LIBS150'), (62, 'LIBS094'), (63, 'LIBS151'), (64, 'LIBS173'), (65, 'LIBS056 LIBS180'), (66, 'LIBS116'), (67, 'LIBS182'), (69, 'LIBS057 LIBS058 LIBS171'),
-            (70, 'LIBS189'), (71, 'LIBS130'), (72, 'LIBS133'), (73, 'LIBS059 LIBS060 LIBS061 LIBS062 LIBS063 LIBS064 LIBS065 LIBS066 LIBS067 LIBS068 LIBS069 LIBS070 LIBS071 LIBS072 LIBS073 LIBS074 LIBS075'), (74, 'LIBS110'),
-            (75, 'LIBS179'), (76, 'LIBS076 LIBS114'), (77, 'LIBS193'), (78, 'LIBS156'), (79, 'LIBS190'),
-            (80, 'oliveni LIBS077 LIBS078 LIBS079 LIBS135'), (81, 'LIBS157'), (82, 'LIBS146'), (84, 'LIBS177'), (85, 'LIBS142'), (86, 'pseudomalachi LIBS081 LIBS082 LIBS175'),  (87, 'LIBS132'),
-            (88, 'rosasi LIBS192'),  (89, 'LIBS096'), (90, 'LIBS084 LIBS134'), (91, 'LIBS131'), (92, 'LIBS085 LIBS086 LIBS100 LIBS100'), (94, 'LIBS149'), (95, 'LIBS087'),
-            (96, 'LIBS169'), (97, 'tenori LIBS155'), (98, 'tetrahedr LIBS088 LIBS089'),  (99, 'LIBS102'), (100, 'LIBS091'), (101, 'LIBS184'), (102, 'LIBS181'), (103, 'LIBS124'), (104, 'LIBS092 LIBS147'), (105, 'LIBS129'), (106, 'LIBS098'), (107, 'LIBS093')
-        ]
-
-def organise_datasets(minerals, outputname):
+def organise_datasets(output_path, repo_path, raw_path, minerals, datasetname):
     """
-    Saves files in the format:
-    Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv
-    """
-    # file locations
-    minerals_file = r'data/synthetic_minerals.npy'
-    hh_data = r'/media/ben/Volume/ml_data/hh_raw'
-    output_path = os.path.join(hh_data, outputname)
+    This script takes all the measurements for the given list of minerals and
+    copies them from individual folders in the old file system into the new
+    output directory.
+    Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv
 
-    # information on all minerals
+    :param repo_path:   path to repository
+    :param raw_path:    path to folder containing the raw dataset provided by Pia Brinkmann
+    :param output_path: path for the new handheld dataset
+    :minerals:          list containing tuples of (mineral ID, all foldernames for this mineral)
+    :datasetname:       name of the dataset for the logfile
+    :returns:           Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv in the output directory
+    """
+
+
+    # information on all minerals to include mineral class and mineral group
+    minerals_file = os.path.join(repo_path,'data/synthetic_minerals.npy')
     all_list = np.load(minerals_file, allow_pickle=True)
     # globbed filenames of all .csv files in the data directory and subdirectories
-
     for mineral_id, mineral_code in tqdm(minerals):
         codes = mineral_code.split(' ')
         filepaths = list()
         # iterate over entire directory structure to filter out spectra that belong to the current mineral
-        for f in Path(hh_data).rglob('*.[cC][sS][vV]'):
+        for f in Path(raw_path).rglob('*.[cC][sS][vV]'):
             # filename and codes need lowercase for comparison, e.g. to make finding 'azurit' in 'Azurite' work
             f_str = str(f).lower()
             # ignore these 2 folders
@@ -84,6 +53,7 @@ def organise_datasets(minerals, outputname):
                     counter += 1
                     sorted_by_parent.append(list())
                 sorted_by_parent[counter].append(f)
+        mineral_id = int(mineral_id)
 
         mineral_class = all_list[mineral_id][4]
         mineral_subgroup = all_list[mineral_id][5]
@@ -93,7 +63,7 @@ def organise_datasets(minerals, outputname):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-        with open(os.path.join(hh_data, 'transformation_log_'+outputname+'.txt'), 'a') as logfile:
+        with open(os.path.join(raw_path, 'transformation_log_'+datasetname+'.txt'), 'a') as logfile:
             for directory in tqdm(sorted_by_parent, leave=False):
                 # write log file entry to mark the transformation of directory names to numeric indices in case anyone needs
                 # this information later
@@ -119,6 +89,25 @@ def organise_datasets(minerals, outputname):
                     copy2(str(f), os.path.join(output_path, new_file_name))
                 output_counter += 1
 
-organise_datasets(minerals=minerals_all, outputname = 'hh_all')
-organise_datasets(minerals=minerals_6, outputname = 'hh_6')
-organise_datasets(minerals=minerals_12, outputname = 'hh_12')
+
+if __name__ == '__main__':
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+    try:
+        hh_12_path = dataset_configs['hh_12_path']
+        hh_12_name = dataset_configs['hh_12_name']
+
+        hh_all_path = dataset_configs['hh_all_path']
+        hh_all_name = dataset_configs['hh_all_name']
+
+        repo_path = dataset_configs['repo_path']
+        raw_path = dataset_configs['raw_path']
+
+    except KeyError as e:
+        print(f'Missing dataset config key: {e}')
+        sys.exit(1)
+
+    minerals_all = np.load(os.path.join(repo_path, 'data/mineral_infos/mineral_id_folder_100.npy'))
+    minerals_12 = np.load(os.path.join(repo_path, 'data/mineral_infos/mineral_id_folder_12.npy'))
+    organise_datasets(hh_all_path, repo_path, raw_path, minerals_all, hh_all_name)
+    organise_datasets(hh_12_path, repo_path, raw_path, minerals_12, hh_12_name)
