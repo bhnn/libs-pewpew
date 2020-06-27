@@ -15,7 +15,8 @@ import yaml
 from keras.utils import to_categorical
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import (balanced_accuracy_score, classification_report,
+                             confusion_matrix)
 from sklearn.utils import class_weight, shuffle
 from tensorflow.keras import Model, regularizers
 from tensorflow.keras.layers import Concatenate, Dense, Dropout, Input
@@ -177,13 +178,15 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
 
 def diagnose_output(y_true, y_pred, class_ids, show=True, file_name=None):
     """
-    Calculates sklearn.metrics.classification_report and confusion matrix for provided data and visualises them.
+    Calculates sklearn.metrics.classification_report, balanced accuracy score and confusion matrix for provided data and 
+    visualises them.
 
     :param y_true:      true label information
     :param y_pred:      predicted values
     :param class_ids:   transformed ids of classes for plotting
     """
     print(classification_report(y_true, y_pred, labels=class_ids))
+    print(f'Balanced accuracy score: {balanced_accuracy_score(y_true=y_true, y_pred=y_pred)}')
 
     # normalised confusion matrix
     matrix = confusion_matrix(y_true, y_pred, labels=class_ids)
@@ -415,7 +418,6 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
         norm_function = normalise_snv
     elif normalisation == 2:
         norm_function = normalise_minmax
-
 
     # hh data
     train_data_hh = np.array(sorted(glob(join(path_hh_12, 'train', '*.npz'))))

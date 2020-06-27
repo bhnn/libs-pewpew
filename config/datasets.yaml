@@ -1,7 +1,3 @@
-hh_6_path : ''
-hh_6_str  : 'handheld data (6 classes)'
-hh_6_name : 'hh_6'
-
 hh_12_path : ''
 hh_12_str  : 'handheld data (12 classes)'
 hh_12_name : 'hh_12'
@@ -11,5 +7,9 @@ hh_all_str  : 'handheld data (100 classes)'
 hh_all_name : 'hh_all'
 
 synth_path : ''
-synth_str : 'synthetic data'
+synth_str  : 'synthetic data'
 synth_name : 'synthetic'
+
+raw_path : ''
+raw_str  : 'Raw handheld dataset'
+raw_name : 'raw_handheld'
