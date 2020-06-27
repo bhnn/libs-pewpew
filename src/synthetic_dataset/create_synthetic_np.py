@@ -12,13 +12,25 @@ from bs4 import BeautifulSoup
 def read_mineral_list(file_path, allow_pickle=True):
     """
     Reads list of all minerals, checks them for possible mistakes, reformats into easily iterable list
+
+    :param file_path: Path to file containing mineral information
+    :param allow_pickle: Argument to pass to numpy.load()'s allow_pickle parameter. Defaults to true, current list is pickled.
+    :returns: List of mineral information (id, name, compositions, class, group, ...)
     """
     minerals = np.load(file_path, allow_pickle=allow_pickle)
     return minerals
 
 def fix_sum_to_100(composition, method=0):
     """
-    Fixes sum of passed atomic composition to sum up to 100.0
+    Fixes sum of passed atomic composition to sum up to 100.0. The NIST website that generates LIBS spectra requires a
+    sum of even 100.0 for all its inputs. Because of notation inaccurates on the Mineralienatlas website, spectra with a
+    sum of 99.<1-9> or 100.<1-9> are possible, thus the need to adjust the sum.
+
+    :param composition: List containing atomic composition of single mineral
+    :param method: Picks the distribution method used to fix the compositional sum to 100. Method 0 distributes difference 
+    to 100 evenly, method 1 adjusts the largest element in the composition to reach 100.0. Defaults to 0 because even
+    distribution delivers more chemically sound results.
+    :returns: List containing atomic composition of single mineral with a sum of 100.0
     """
     if method == 0:
         # distribute difference of sum to 100.0 evenly across all composing elements
@@ -37,6 +49,18 @@ def fix_sum_to_100(composition, method=0):
 def assemble_nist_url(elements, percentages, low_wl=180, high_wl=960, resolution=1000, temp='1', eden='1e17'):
     """
     Assembles NIST LIBS url from elements and atomic composition.
+
+    :param elements: List of names of compositional elements (str)
+    :param percentages: List/ndarray of composition percentages in the same order as the names of the corresponding elements
+    :param low_wl: Lower bound of wavelengths produced in generation process
+    :param high_wl: Upper bound of wavelengths produced in generation process
+    :param resolution: Resolution to be used in generation process. Rarely works because the website downscales minerals
+    whose composition is more complex than 2 minerals to resolution 100-200
+    :param temp: Electron temperature measurement parameter used in generation process
+    :param eden: Electron density measurement parameter used in generation process. Needs to be passed as a string, such as
+    '1e17'. Passing the same value numerically will result in the addition of a + when adding it to the URL (1e+17),
+    causing the website to malfunction.
+    :returns: URL string to request synthetic spectrum of specified mineral from the NIST website
     """
     assert type(elements) is list
     assert type(percentages) is list or np.ndarray
@@ -62,6 +86,11 @@ def assemble_nist_url(elements, percentages, low_wl=180, high_wl=960, resolution
 def download_text_and_header(url, verify=False, timeout=1):
     """
     Read page source from url and split into body and header.
+
+    :param url: URL to request
+    :param verify: Request.get()'s verify parameter, defaults to False
+    :param timeout: Request.get()'s timeout parameter, defaults to 1
+    :returns: Tuple containing the entire content of the url's (body, header)
     """
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36'}
     response = requests.get(url, verify=verify, timeout=timeout, headers=headers)
@@ -72,6 +101,9 @@ def download_text_and_header(url, verify=False, timeout=1):
 def retrieve_nist_data(url):
     """
     Download script body information from NIST LIBS url, split off stick data and separate into wavelengths and intensities.
+
+    :param url: NIST website url used to generate spectra
+    :returns: Tuple of stick plot data (infinite resolution raw data) of the generated (stick_wavelength, stick_intensity)
     """
     (body, _) = download_text_and_header(url, True, timeout=30)
     soup = BeautifulSoup(body, "lxml")
@@ -106,7 +138,12 @@ def retrieve_nist_data(url):
 
 def build_spectral_data(data, FWHM):
     """
-    Build spectral peaks from stick plot data.
+    Build spectral peaks from stick plot data and interpolates everything to the PhysChem wavelength defaults. 
+    Function provided by Federico Malerba.
+
+    :param data: Tuple of stick plot data (infinite resolution raw data) of the generated (stick_wavelength, stick_intensity)
+    :param FWHM: "Full width at half maximum" parameter for calculating Gaussian curves
+    :returns: ndarray containing generated, interpolated spectrum (wavelength, intensity) of generated mineral
     """
     stick_wl, stick_int = data
 
@@ -127,6 +164,9 @@ def build_spectral_data(data, FWHM):
 def write_to_file(data, filename):
     """
     Write collected information to file.
+
+    :param data: Data to include in file
+    :param filename: Filename for serialisation
     """
     np.save(filename, data)
 
@@ -134,6 +174,9 @@ def calculate_random_segments(num_segments):
     """
     Splits the value ranges of electron temperature and density into several segments to allow controlled randomisation
     of the entire domain.
+
+    :param num_segments: Number of segments (-1) to split the electron temperature/density intervals into
+    :returns: List of tuples containing the lower and upper bound of each segment
     """
     # charge and density boundaries computed from real-world measurement averages sampled from physical chemistry dept.
     t_ev_segments = np.linspace(0.73, 1.12, num=num_segments)
@@ -150,6 +193,13 @@ def calculate_variations(source, quantity, min_noise=1e-16, max_noise=0.05):
         - for each element, random roll between [1e-16, max_noise) of variation to subtract from it
         - decrease max_noise by the result of each roll, collect subtracted amount
         - for each element, roll between [0, sum_sum_removed) to add to the element
+
+    :param source: Source composition that serves as base for any variations
+    :param quantity: Amount of different variations to produce
+    :param min_noise: Minimal amount of noise to include during the first step of randomisation, 1e-16 in place of small non-0
+    :param max_noise: Maximum amount of noise to work with in the randomisation process. 5% (0.05) was deemed a realistic
+    value by the Department of Physical Chemistry
+    :returns: List containing quantity many variations of the source elemental composition passed to the function.
     """
     results = list()
     for _ in range(quantity):
@@ -193,16 +243,22 @@ def calculate_variations(source, quantity, min_noise=1e-16, max_noise=0.05):
 def create_synthetic_dataset(minerals, worker_id):
     """
     Main routine to generate synthetic dataset.
+
+    :param minerals: List of minerals to continually iterate over. After exhausting the list, the process repeats.
+    :param worker_id: Worker id assigned to this process, passed as command line argument to ensure unique names for the
+    generated files
     """
     # unique process identifier
     process_id = os.getpid()
     count = 0
+    # Process is meant to generate spectra for all passed minerals continually until interrupted
     while(True):
         for num, name, elements, composition, m_class, m_group in minerals:
             # calculate random alterations of electron temperature and density (measurement noise)
             for i,(t_ev,e_den) in enumerate(calculate_random_segments(num_segments=6)):
                 # calculate random alterations of composition
-                variations = calculate_variations(composition, quantity=5)
+                num_variations = 5
+                variations = calculate_variations(composition, quantity=num_variations)
                 for j,var in enumerate(variations):
                     # make sum of composing elements be exactly 100
                     fix_sum_to_100(var, method=0)
@@ -222,7 +278,7 @@ def create_synthetic_dataset(minerals, worker_id):
                     new_file_name = f'{worker_id:02}_{process_id:08}__{num:04}_{m_class:03}_{m_group:03}_{i:03}_{min_num:05}'
                     print(new_file_name)
                     write_to_file(data, f'results/{new_file_name}')
-            count += 5
+            count += num_variations
     return 0
 
 def start_multiprocessing(**args):
@@ -251,7 +307,7 @@ if __name__ == '__main__':
         '-i', '--id',
         type=int,
         required=True,
-        help='Process id, used for distinguishing save files by process later',
+        help='Unique process id, used for distinguishing save files by process later',
         dest='id')
     args = parser.parse_args()
 
