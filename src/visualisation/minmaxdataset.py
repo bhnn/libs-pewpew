@@ -52,5 +52,5 @@ if __name__ == '__main__':
             print(f'Missing dataset config key: {e}')
             sys.exit(1)
 
-    minerals_all_id = np.load(os.path.join(repo_path, 'data/mineral_id_100.npy'))
+    minerals_all_id = np.load(os.path.join(repo_path, 'data/mineral_infos/mineral_id_100.npy'))
     find_min_max(minerals_all_id, hh_all_path, hh_all_name, repo_path)
