@@ -93,9 +93,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-c', '--classification',
         type=int,
-        choices=[0, 1, 2, 3],
+        choices=[0, 1, 2],
         default=2,
-        help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
+        help='Which classification target to pursue. 0=classes, 1=subgroups, 2=minerals',
         dest='cls_choice'
     )
     parser.add_argument(
