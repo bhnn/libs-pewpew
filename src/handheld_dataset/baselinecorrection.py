@@ -6,8 +6,7 @@ from scipy import sparse
 from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-
-path = r'/Users/jh/github'
+import yaml
 
 
 def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
@@ -19,6 +18,7 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     :param p:       asymmetry
     :param niter:   number of iterations
     """
+
     if np.max(y) <0:
         warnings.warn('LIBS shot is empty, no positive values')
     y = y[:,1].clip(min=0) #remove values < 0 and discard wavelengths
@@ -37,31 +37,41 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
 
 
 
-def correct_baseline(path, datasetname):
+def correct_baseline(datasetpath):
     """
     Saves each dataset (handheld with 12 and 100 minerals) in a new folder with
     baseline corrected spectra to minimize the runtime of training the models
-    :param:         path to folder containing the dataset
-    :datasetname:   name of the dataset
-    :returns:       Saves two new folders with baseline corrected spectra
+    :param datasetpath:         path to folder containing the dataset with train/test split
+    :param datasetname:         name of the dataset
+    :returns:                   Saves two new folders with baseline corrected spectra as train and test
     """
+
     # create output directory
-    if not os.path.exists(os.path.join(path, datasetname +'_corrected')):
-        os.makedirs(os.path.join(path, datasetname +'_corrected'))
+    for folder in ['train', 'test']:
+        if not os.path.exists(os.path.join(datasetpath, folder)):
+            os.makedirs(os.path.join(datasetpath, folder))
 
-    files = sorted(glob.glob(os.path.join(path, datasetname, '*.npz')))
+        files = sorted(glob.glob(os.path.join(datasetpath, folder + '_uncorrected', '*.npz')))
 
-    for f in tqdm(files):
-        with np.load(f) as npz_file:
-            mutable_file = dict(npz_file)
-            mutable_file['data'][:,1] = baseline_als_optimized(npz_file['data'])
-            filename = f[-26:]
-            output = os.path.join(path, datasetname +'_corrected', filename)
-            np.savez_compressed(output, data=mutable_file['data'], labels=mutable_file['labels'])
+        for f in tqdm(files):
+            with np.load(f) as npz_file:
+                mutable_file = dict(npz_file)
+                mutable_file['data'][:,1] = baseline_als_optimized(npz_file['data'])
+                filename = f[-26:]
+                output = os.path.join(datasetpath, folder, filename)
+                np.savez_compressed(output, data=mutable_file['data'], labels=mutable_file['labels'])
 
 
+if __name__ == '__main__':
 
-correct_baseline(path, 'hh_12/test')
-correct_baseline(path, 'hh_12/train')
-correct_baseline(path, 'hh_all/test')
-correct_baseline(path, 'hh_all/train')
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+    try:
+        hh_12_path = dataset_configs['hh_12_path']
+        hh_all_path = dataset_configs['hh_all_path']
+    except KeyError as e:
+        print(f'Missing dataset config key: {e}')
+        sys.exit(1)
+
+    correct_baseline(hh_12_path)
+    correct_baseline(hh_all_path)

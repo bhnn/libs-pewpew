@@ -14,6 +14,7 @@ def convert_to_numpy(datasetpath):
     :param datasetpath:     path to folder containing all csv files produced by 'organise_hh_dataset.py'
     :returns:               files saved in .npz format, csv files deleted
      """
+
     files = sorted(glob.glob(os.path.join(datasetpath,'*.csv')))
     for f in tqdm(files, desc='npz-' + datasetpath):
         if os.path.getsize(f) > 250000: # > 250 kB
@@ -47,7 +48,7 @@ def train_test_split(datasetpath, dataset_id):
 
     for m_id in tqdm(dataset_id, desc='split-' + datasetpath):
         m_id = f'{m_id:04}'
-        files = sorted(glob.glob(os.path.join(path, m_id + '*.npz')))
+        files = sorted(glob.glob(os.path.join(datasetpath, m_id + '*.npz')))
         max_mp = int(files[-1][-13:-10])+1 # max measure points, plus 1 because it starts counting from 0
 
         for f in tqdm(files, leave=False):
@@ -65,25 +66,26 @@ def train_test_split(datasetpath, dataset_id):
                 shutil.move(f, os.path.join(datasetpath, 'train_uncorrected'))
 
 
-if __main__ == '__name__':
+if __name__ == '__main__':
 
     with open('config/datasets.yaml') as cnf:
         dataset_configs = yaml.safe_load(cnf)
         try:
             hh_all_path = dataset_configs['hh_all_path']
             hh_12_path = dataset_configs['hh_12_path']
+            repo_path = dataset_configs['repo_path']
         except KeyError as e:
             print(f'Missing dataset config key: {e}')
             sys.exit(1)
 
     #load the mineral ids to iterate through filenames by mineral
-    minerals_12_id = np.load('/Users/jh/github/libs-pewpew/data/mineral_id_12.npy')
-    minerals_100_id = np.load('/Users/jh/github/libs-pewpew/data/mineral_id_100.npy')
+    minerals_12_id = np.load(os.path.join(repo_path, 'data/mineral_infos/mineral_id_12.npy'))
+    minerals_100_id = np.load(os.path.join(repo_path,'data/mineral_infos/mineral_id_100.npy'))
 
     #convert files from csv to npz first for hh_12 and hh_all
-    convert_to_numpy(datasetpath=hh_12_path)
-    convert_to_numpy(datasetpath= hh_all_path)
+    convert_to_numpy(hh_12_path)
+    convert_to_numpy(hh_all_path)
 
     #perform train test split for hh_12 and hh_all
-    train_test_split(datasetpath= hh_12_path), minerals_12_id)
-    train_test_split(datasetpath= hh_all_path), minerals_100_id)
+    train_test_split(hh_12_path, minerals_12_id)
+    train_test_split(hh_all_path, minerals_100_id)
