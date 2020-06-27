@@ -8,8 +8,13 @@ from utils import (build_model, diagnose_output, prepare_mixture_dataset,
                    print_dataset_info, repeat_and_collate,
                    set_classification_targets)
 
-path = r'/Users/jh/github'
-
+with open('config/datasets.yaml') as cnf:
+    dataset_configs = yaml.safe_load(cnf)
+    try:
+        repo_path = dataset_configs['repo_path']
+    except KeyError as e:
+        print(f'Missing dataset config key: {e}')
+        sys.exit(1)
 
 def classify(**args):
     """
@@ -48,7 +53,7 @@ def classify(**args):
                 class_weight=d['class_weights'])
             results[i,j] = balanced_accuracy_score(d['test_labels'], model.predict(d['test_data'](), steps=d['test_steps']).argmax(axis=1))
     print(results)
-    np.save(join(path, 'libs-pewpew/data/synthetic_influence_target_{cls_target}', results))
+    np.save(join(repo_path, 'data/synthetic_influence_target_{cls_target}', results))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
