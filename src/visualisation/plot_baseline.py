@@ -10,7 +10,8 @@ import pandas as pd
 import os
 from tqdm import tqdm
 import yaml
-
+import sys
+import warnings
 
 
 def only_baseline(y, lam=102, p=0.01, niter=10):
@@ -54,7 +55,7 @@ def plot_spectra_with_baseline(repo_path):
     plt.plot(x_values, only_baseline(sample), label='Baseline', color='#96cf6d')
     plt.xlabel('Wavelength', fontsize=14)
     plt.ylabel('Intensity', fontsize=14)
-    plt.title('Average LIBS spectra of one measurepoint - Mineral: Chalcopyrite', fontsize=16, pad=15)
+    plt.title('LIBS Spectrum - Mineral: Chalcopyrite', fontsize=16, pad=15)
     plt.legend(fontsize=13)
     plt.axhline(linewidth=0.5, color='black')
 
@@ -85,7 +86,7 @@ def plot_spectra_baselinecorrection(repo_path):
     plt.plot(x_values, baseline, label='Baseline', color='#96cf6d')
     plt.xlabel('Wavelength', fontsize=14)
     plt.ylabel('Intensity', fontsize=14)
-    plt.title('Average LIBS spectra of one measurepoint - Mineral: Chalcopyrite', fontsize= 16, pad=15)
+    plt.title('LIBS Spectrum - Mineral: Chalcopyrite', fontsize= 16, pad=15)
     plt.legend(fontsize=13)
     plt.axhline(linewidth=0.5, color='black')
     plt.savefig(os.path.join(repo_path,'data/visualisations/spectrum_corrected_baseline.png'))

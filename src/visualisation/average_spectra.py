@@ -10,7 +10,7 @@ import pandas as pd
 import os
 from tqdm import tqdm
 import yaml
-
+import sys
 
 def save_average_minerals(repo_path, hh_12_path, minerals_12_id):
     """
