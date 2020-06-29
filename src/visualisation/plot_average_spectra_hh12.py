@@ -10,7 +10,7 @@ import pandas as pd
 import os
 from tqdm import tqdm
 import yaml
-
+import sys
 
 def plot_several(repo_path, mineral_names):
     """

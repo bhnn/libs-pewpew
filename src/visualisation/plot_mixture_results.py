@@ -5,7 +5,7 @@ import os
 import yaml
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
-
+import sys
 
 def plot_mixture(repo_path):
     """

@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import yaml
-
+import sys
 
 def find_min_max(mineralid, datasetpath, datasetname, repo_path):
     """
