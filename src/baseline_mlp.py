@@ -76,9 +76,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d', '--dataset',
         type=int,
-        choices=[0, 1, 2, 3],
+        choices=[0, 1, 2],
         default=2,
-        help='Which dataset(s) to use. 0=synthetic, 1=hh_6, 2=hh_12, 3=hh_all',
+        help='Which dataset(s) to use. 0=synthetic, 1=hh_12, 2=hh_all',
         dest='dataset_choice'
     )
     parser.add_argument(
@@ -100,7 +100,7 @@ if __name__ == '__main__':
         '-n', '--normalisation',
         type=int,
         choices=[0, 1, 2],
-        default=0,
+        default=2,
         help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
         dest='norm_choice'
     )
