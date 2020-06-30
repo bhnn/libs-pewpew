@@ -77,7 +77,7 @@ if __name__ == '__main__':
         '-d', '--dataset',
         type=int,
         choices=[0, 1, 2],
-        default=2,
+        default=1,
         help='Which dataset(s) to use. 0=synthetic, 1=hh_12, 2=hh_all',
         dest='dataset_choice'
     )
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-e', '--epochs',
         type=int,
-        default=5,
+        default=10,
         help='How many epochs to train for',
         dest='epochs'
     )

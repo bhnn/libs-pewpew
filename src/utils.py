@@ -318,14 +318,10 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation=2, train_s
                 data_str = dataset_configs['synth_str']
                 data_name = dataset_configs['synth_name']
             elif dataset_choice == 1:
-                data_path = dataset_configs['hh_6_path']
-                data_str = dataset_configs['hh_6_str']
-                data_name = dataset_configs['hh_6_name']
-            elif dataset_choice == 2:
                 data_path = dataset_configs['hh_12_path']
                 data_str = dataset_configs['hh_12_str']
                 data_name = dataset_configs['hh_12_name']
-            elif dataset_choice == 3:
+            elif dataset_choice == 2:
                 data_path = dataset_configs['hh_all_path']
                 data_str = dataset_configs['hh_all_str']
                 data_name = dataset_configs['hh_all_name']

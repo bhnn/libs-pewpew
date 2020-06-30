@@ -45,7 +45,7 @@ def classify(**args):
 
     del d
     d = prepare_dataset(
-        args['dataset_choice'],
+        1, # HH12
         cls_target,
         args['batch_size'],
         args['norm_choice'])
@@ -104,14 +104,6 @@ if __name__ == '__main__':
         dest='batch_size'
     )
     parser.add_argument(
-        '-d', '--dataset',
-        type=int,
-        choices=[2, 3],
-        default=1,
-        help='Which dataset(s) to use. 2=HH12, 3=HH100',
-        dest='dataset_choice'
-    )
-    parser.add_argument(
         '-c', '--classification',
         type=int,
         choices=[0, 1, 2],
@@ -122,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-e', '--epochs',
         type=int,
-        default=5,
+        default=10,
         help='How many epochs to train for',
         dest='epochs'
     )

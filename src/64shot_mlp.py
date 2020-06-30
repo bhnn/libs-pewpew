@@ -27,7 +27,7 @@ def classify(**args):
         args['dataset_choice'],
         cls_target,
         args['batch_size'],
-        2, # minmax normalisation
+        args['norm_choice'],
         mp_heatmap=True)
 
     print('\n\tTask: Classify «{}» using «{}»\n'.format(cls_str, d['data_str']))
@@ -113,9 +113,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-d', '--dataset',
         type=int,
-        choices=[2, 3],
-        default=2,
-        help='Which dataset(s) to use. 2=hh_12, 3=hh_all',
+        choices=[1, 2],
+        default=1,
+        help='Which dataset(s) to use. 1=hh_12, 2=hh_all',
         dest='dataset_choice'
     )
     parser.add_argument(
@@ -129,9 +129,17 @@ if __name__ == '__main__':
     parser.add_argument(
         '-e', '--epochs',
         type=int,
-        default=5,
+        default=10,
         help='How many epochs to train for',
         dest='epochs'
+    )
+    parser.add_argument(
+        '-n', '--normalisation',
+        type=int,
+        choices=[0, 1, 2],
+        default=2,
+        help='Which normalisation to use. 0=None, 1=snv, 2=minmax',
+        dest='norm_choice'
     )
     args = parser.parse_args()
 
