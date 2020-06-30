@@ -1,5 +1,3 @@
-# Information regarding files in this folder
-
 ## This folder contains the following files:
 
 ### [ZusammenfassungMinerale.xlsx](ZusammenfassungMinerale.xlsx):
