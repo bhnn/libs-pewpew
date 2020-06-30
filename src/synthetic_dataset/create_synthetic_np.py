@@ -1,11 +1,14 @@
 import argparse
 import multiprocessing as mp
-import os
+import sys
 import time
+from os import getpid, makedirs
+from os.path import join, exists
 from random import sample, uniform
 
 import numpy as np
 import requests
+import yaml
 from bs4 import BeautifulSoup
 
 
@@ -240,7 +243,7 @@ def calculate_variations(source, quantity, min_noise=1e-16, max_noise=0.05):
         results.append(copy)
     return results
 
-def create_synthetic_dataset(minerals, worker_id):
+def create_synthetic_dataset(minerals, worker_id, dest_path):
     """
     Main routine to generate synthetic dataset.
 
@@ -249,47 +252,63 @@ def create_synthetic_dataset(minerals, worker_id):
     generated files
     """
     # unique process identifier
-    process_id = os.getpid()
+    process_id = getpid()
     count = 0
     # Process is meant to generate spectra for all passed minerals continually until interrupted
     while(True):
-        for num, name, elements, composition, m_class, m_group in minerals:
-            # calculate random alterations of electron temperature and density (measurement noise)
-            for i,(t_ev,e_den) in enumerate(calculate_random_segments(num_segments=6)):
-                # calculate random alterations of composition
-                num_variations = 5
-                variations = calculate_variations(composition, quantity=num_variations)
-                for j,var in enumerate(variations):
-                    # make sum of composing elements be exactly 100
-                    fix_sum_to_100(var, method=0)
+        try:
+            for num, name, elements, composition, m_class, m_group in minerals:
+                # calculate random alterations of electron temperature and density (measurement noise)
+                for i,(t_ev,e_den) in enumerate(calculate_random_segments(num_segments=6)):
+                    # calculate random alterations of composition
+                    num_variations = 5
+                    variations = calculate_variations(composition, quantity=num_variations)
+                    for j,var in enumerate(variations):
+                        # make sum of composing elements be exactly 100
+                        fix_sum_to_100(var, method=0)
 
-                    # create NIST link, collect data
-                    t_ev_sample = uniform(t_ev[0], t_ev[1])
-                    e_den_sample = str(uniform(e_den[0], e_den[1])).replace('+','') # NIST site malfunctions for + in exp notation
-                    url = assemble_nist_url(elements, var, resolution=1000, temp=t_ev_sample, eden=e_den_sample)
-                    # clean up results, discard columns
-                    data = retrieve_nist_data(url)
-                    data = build_spectral_data(data, FWHM=0.18039)
-                    # save to file
-                    data = np.array([data, np.array([m_class, m_group, num])])
-                    
-                    # <manual worker id>_<process id>__<mineral id>_<class>_<group>_<tev/eden random segment>_<mineral count> 
-                    min_num = count + j
-                    new_file_name = f'{worker_id:02}_{process_id:08}__{num:04}_{m_class:03}_{m_group:03}_{i:03}_{min_num:05}'
-                    print(new_file_name)
-                    write_to_file(data, f'results/{new_file_name}')
-            count += num_variations
+                        # create NIST link, collect data
+                        t_ev_sample = uniform(t_ev[0], t_ev[1])
+                        e_den_sample = str(uniform(e_den[0], e_den[1])).replace('+','') # NIST site malfunctions for + in exp notation
+                        url = assemble_nist_url(elements, var, resolution=1000, temp=t_ev_sample, eden=e_den_sample)
+                        # clean up results, discard columns
+                        data = retrieve_nist_data(url)
+                        data = build_spectral_data(data, FWHM=0.18039)
+                        # save to file
+                        data = np.array([data, np.array([m_class, m_group, num])])
+                        
+                        # <manual worker id>_<process id>__<mineral id>_<class>_<group>_<tev/eden random segment>_<mineral count> 
+                        min_num = count + j
+                        new_file_name = f'{worker_id:02}_{process_id:08}__{num:04}_{m_class:03}_{m_group:03}_{i:03}_{min_num:05}'
+                        print(new_file_name)
+                        write_to_file(data, join(dest_path, new_file_name))
+                count += num_variations
+        except KeyboardInterrupt as e:
+            print('KeyboardInterrupt received. Aborting.')
+            break
     return 0
 
 def start_multiprocessing(**args):
     """
     Starts the main generation routine with as many processes as specified
     """
+
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            repo_path = dataset_configs['repo_path']
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
+
+    dest_path = join(repo_path, 'results', 'synthetic')
+    makedirs(dest_path, exist_ok=True)
+
     # read in list of all minerals 
-    mineral_subset = [mineral for mineral in read_mineral_list('data/synthetic_minerals.npy')
+    mineral_subset = [mineral for mineral in read_mineral_list(join(repo_path, 'data', 'synthetic_minerals.npy'))
                       if mineral[0] in [11, 19, 26, 28, 35, 41, 73, 80, 86, 88, 97, 98]]
     
-    process_args = [(mineral_subset, args['id'])] * args['num_processes']
+    process_args = [(mineral_subset, args['id'], dest_path)] * args['num_processes']
 
     with mp.Pool(args['num_processes']) as pool:
         pool.starmap(create_synthetic_dataset, process_args)

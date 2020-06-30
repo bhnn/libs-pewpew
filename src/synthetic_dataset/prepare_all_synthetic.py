@@ -1,15 +1,17 @@
+import sys
 from collections import defaultdict
 from os import makedirs
 from os.path import exists, join
 from pathlib import Path
 
 import numpy as np
+import yaml
 from tqdm import tqdm
 
 #
 # DISCLAIMER:
 # The values for this dataset preparation are hardcoded for our set of generated synthetic spectra and will malfunction
-# when used with any other dataset. Mineral ids, total number of minerals, split indices
+# when used with any other dataset. Mineral ids, total number of minerals, split indices need to be adjusted.
 #
 
 # Situation: generated 352,692 synthetic mineral spectra
@@ -18,7 +20,15 @@ from tqdm import tqdm
 # will set aside 2x 15% of each mineral for eval and test, and discard 500 samples to work with even 29,000 for all
 
 if __name__ == '__main__':
-    data_path = r"E:\Data\LIBSqORE\synthetic_all\results"
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            raw_path = dataset_configs['raw_path']
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
+
+    data_path = join(raw_path, 'synthetic')
     # one key-entry for each mineral id, a defaultdict of lists as value to collect different configurations per mineral
     # result is a dictionary of filenames per mineral id and config
     data = {m_id : defaultdict(list) for m_id in [11, 19, 26, 28, 35, 41, 73, 80, 86, 88, 97, 98]}
@@ -48,10 +58,9 @@ if __name__ == '__main__':
             conf = int(info[6])
             new_nr = relabel_dict[m_id][conf]
             new_name = '{}_{:05}'.format('_'.join(info[3:-1]), int(new_nr))
-            dest_dir = join('E:\Data\LIBSqORE\synthetic_all', split)
+            dest_dir = join(data_path, split)
 
-            if not exists(dest_dir):
-                makedirs(dest_dir)
+            makedirs(dest_dir, exist_ok=True)
             dest = join(dest_dir, new_name)
 
             # convert to npz and store at destination
@@ -62,7 +71,7 @@ if __name__ == '__main__':
             files_to_delete.append(str(file_obj))
 
     # holds filenames of files that have been used for creating the dataset (process skips ~2,700 files)
-    # if drive capacity is low, you can delete all files mentioned in this file
-    with open('files_to_delete.txt', 'w') as f:
+    # if drive capacity is low, you can delete all filenames mentioned in this file
+    with open(join(raw_path, 'files_to_delete.txt'), 'w') as f:
         for i in files_to_delete:
             f.write(f'{i}\n')
