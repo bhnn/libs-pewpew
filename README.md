@@ -23,7 +23,7 @@ First, the relevant mineral spectra must be extracted from the large collection 
 
 ```python src/handheld_dataset/organise_hh_dataset.py```
 
-will collate a 100-mineral dataset and a 12-mineral subset and organise them in separate folders each. Afterwards, they can be converted to compressed numpy (`.npz`) files using 
+will collate a 100-mineral dataset (**HH100**) and a 12-mineral subset (**HH12**) and organise them in separate folders each. Afterwards, they can be converted to compressed numpy (`.npz`) files using 
 
 ```python src/handheld_dataset/csvtonumpy.py```
 
@@ -82,61 +82,69 @@ These models are available to test different hypotheses:
 
 All models (except decision trees) are either using all of the baseline architecture or slightly modified parts of it. This allows them to be compared with this baseline model more easily.
 
+#### Example: Performance impact of preprocessing choices
+
+```python src/baseline_mlp.py -r 3 -e 10 -c 2 -d 1 -n <{0, 1, 2}>```
+
+This would run the baseline model 3 times for 10 epochs each on the HH12 dataset with minerals as the classification target using the chosen normalisation method: `0` for *no* normalisation, `1` for *standard normal variate* normalisation or `2` for *min-max* normalisation. Prediction accuracy results of models with a `-r` value > 1 will be averaged over all model repetitions. These results can then be compared with those from the other normalisation methods.
+
 ### Heatmap Paradigm (64Shot)
 
+Hypothesis: LIBS device measurements are taken as 64 shots in an 8x8 grid, presumed to be aimed at the centre of minerals by the conducting researcher. Thus, classification accuracy in the centre of the grid should be higher than at the edges of the grid.
 
-## Transfer learning & concatenation
+```python src/64shot_mlp.py -e 10 -c 2 -d 1```
 
+This trains a baseline model for 10 epochs on the HH12 dataset with minerals as the classification target. Afterwards, the model arranges the test set's measure points into its original 8x8 grids and predicts accuracies for each shot in the grid. All intermediate heatmap results for measure points are saved to the `results/` folder and the result of calculating an average across all measure point heatmaps is displayed.
 
-### Mixture of handheld and synthetic dataset with baseline MLP:
-To evaluate the influence of the generated synthetic data on the accuracy of the trained ANN, the following code will train a baseline MLP with a mixture of the handheld dataset with the synthetic dataset from 100% handheld + 0% synthetic to 100 % handheld + 100% synthetic.
+### Transfer learning & concatenation
 
-- python3 src/mixture_mlp.py -r 5 -e 10  -c 0
-- python3 src/mixture_mlp.py -r 5 -e 10  -c 1
-- python3 src/mixture_mlp.py -r 5 -e 10  -c 2
+There are 2 transfer learning concepts available: classic transfer learning where the final layer is replaced for fine-tuning on another dataset, and [concatenated transfer learning](https://i.imgur.com/ARHIcfq.png) where the output of the last dense layer of one network is concatenated to the input of another network that is fine-tuned on the secondary dataset.
 
-The results can be visualized:
-- python3 src/visualisation/plot_mixture_results.py
+For these models, no dataset can be selected with command line parameters, as they only work with a combination of the HH12 dataset and a synthetic dataset containing the same 12 minerals.
 
-#### Comparison of preprocessing methods with baseline MLP:
+```python src/concat_mlp.py -r 3 -e 10 -c 2```
 
-- change -c for three classification targets and -n for three normalisation methods
-- 3 repetitions, 5 epochs, handheld dataset with 12 minerals + synthetic dataset with 12 minerals
-- python 3 baseline_mlp.py -r 3 -e 5 -d 2 -c 0/1/2 -n 0/1/2
+```python src/transfer_mlp.py -r 3 -e 10 -c 2```
 
+### Performance influence of mixture of handheld and synthetic dataset
 
+To evaluate the influence of the generated synthetic data on the accuracy of neural network training, the following code will train a baseline model with a mixture of HH12 and the synthetic dataset: from a composition 100% handheld + 0% synthetic data to 100 % handheld + 100% synthetic data.
 
+```python src/mixture_mlp.py -r 5 -e 10 -c 2```
 
+---
 
-### Visualizations
+## Visualizations
 
-All visualisations will be saves in libs-pewpew/data/visualisations
+All visualisations will be saves in *data/visualisations*.
 
-#### Plot average Spectra
+### Plot average spectra per mineral
 
 Calculates and saves average synthetic and average handheld spectra for the 12 minerals:
-- python3 src/visualisation/average_spectra.py
+
+```python src/visualisation/average_spectra.py```
 
 To plot the handheld dataset:
-- python3 src/visualisation/plot_average_spectra_hh12.py
+
+```python src/visualisation/plot_average_spectra_hh12.py```
 
 To plot the comparison of handheld and synthetic data:
-- python3 src/visualisation/plot_syn_hh_spectra.py
 
-#### Plot baseline correction
+```python src/visualisation/plot_syn_hh_spectra.py```
+
+### Plot baseline correction
 
 Visualisation of uncorrected spectrum, the baseline and the corrected spectrum
 
-- python3 src/visualisation/plot_baseline.py
+``` python3 src/visualisation/plot_baseline.py```
 
+### Plot results of the mixture of datasets
 
-#### Plot results of the mixture of datasets
+```python3 src/visualisation/plot_mixture_results.py```
 
-- python3 src/visualisation/plot_mixture_results.py
+### Minimum and maximum amount of spectra in the dataset
 
-#### Minimum and maximum amount of spectra in the dataset
-
-- python3 src/visualisation/minmaxdataset.py
+``` python3 src/visualisation/minmaxdataset.py```
 
 ## Acknowledgements
 Thanks to
