@@ -10,7 +10,8 @@ import yaml
 
 def convert_to_numpy(datasetpath):
     """
-    Saves csv files as numpy files in the .npz format and deletes csv files
+    Saves csv files as numpy files in the .npz format and deletes csv files.
+    
     :param datasetpath:     path to folder containing all csv files produced by 'organise_hh_dataset.py'
     :returns:               files saved in .npz format, csv files deleted
      """
@@ -31,9 +32,9 @@ def convert_to_numpy(datasetpath):
 
 def train_test_split(datasetpath, dataset_id):
     """
-    Performs a train-test split, does not seperate parts of a measure point in
-    train and another part in test, but splits the dataset by splitting
-    the measure points (eg. 10 measurepoints = 7 in train and 3 in test)
+    Performs a train-test split, does not seperate parts of a measure point in train and another part in test, but
+    splits the dataset by splitting the measure points (eg. 10 measurepoints = 7 in train and 3 in test).
+
     :param datasetpath:     path to folder of the dataset containing all .npz files
     :param dataset_id:      list containing the ids of minerals to iterate through the folder by mineral and split
     :returns:               train and test folders with "_uncorrected" because the spectra are not baseline corrected
@@ -67,7 +68,6 @@ def train_test_split(datasetpath, dataset_id):
 
 
 if __name__ == '__main__':
-
     with open('config/datasets.yaml') as cnf:
         dataset_configs = yaml.safe_load(cnf)
         try:

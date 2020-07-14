@@ -12,8 +12,8 @@ import warnings
 
 def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     """
-    Calculates the baseline correction of LIBS spectra and returns corrected
-    spectra.
+    Calculates the baseline correction of LIBS spectra and returns corrected spectra.
+    
     :param y:       sample to process
     :param lam:     smoothness
     :param p:       asymmetry
@@ -40,8 +40,9 @@ def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
 
 def correct_baseline(datasetpath):
     """
-    Saves each dataset (handheld with 12 and 100 minerals) in a new folder with
-    baseline corrected spectra to minimize the runtime of training the models
+    Saves each dataset (handheld with 12 and 100 minerals) in a new folder with baseline corrected spectra to minimize
+    the runtime of training the models.
+
     :param datasetpath:         path to folder containing the dataset with train/test split
     :param datasetname:         name of the dataset
     :returns:                   Saves two new folders with baseline corrected spectra as train and test
@@ -64,7 +65,6 @@ def correct_baseline(datasetpath):
 
 
 if __name__ == '__main__':
-
     with open('config/datasets.yaml') as cnf:
         dataset_configs = yaml.safe_load(cnf)
     try:

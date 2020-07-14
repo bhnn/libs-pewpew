@@ -9,9 +9,8 @@ import yaml
 
 def organise_datasets(output_path, repo_path, raw_path, minerals, datasetname):
     """
-    This script takes all the measurements for the given list of minerals and
-    copies them from individual folders in the old file system into the new
-    output directory.
+    This script takes all the measurements for the given list of minerals and copies them from individual folders in the
+    old file system into the new output directory.
     Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv
 
     :param repo_path:   path to repository
@@ -21,7 +20,6 @@ def organise_datasets(output_path, repo_path, raw_path, minerals, datasetname):
     :datasetname:       name of the dataset for the logfile
     :returns:           Saves files in the format: Mineral-ID_Class_Subgroup_Measurepoint_Shot.csv in the output directory
     """
-
 
     # information on all minerals to include mineral class and mineral group
     minerals_file = os.path.join(repo_path,'data/synthetic_minerals.npy')
