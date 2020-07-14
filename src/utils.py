@@ -4,7 +4,7 @@ from functools import partial
 from glob import glob
 from math import ceil
 from ntpath import basename
-from os import sep
+from os import makedirs, sep
 from os.path import join
 
 import matplotlib.pyplot as plt
@@ -20,6 +20,7 @@ from sklearn.metrics import (balanced_accuracy_score, classification_report,
 from sklearn.utils import class_weight, shuffle
 from tensorflow.keras import Model, regularizers
 from tensorflow.keras.layers import Concatenate, Dense, Dropout, Input
+from tqdm import tqdm
 
 
 def repeat_and_collate(classify_fn, **args):
@@ -36,6 +37,7 @@ def repeat_and_collate(classify_fn, **args):
         for i,iteration in enumerate(results):
             print(f'Run {i+1:02d} balanced accuracy:\t{round(results[i], 5)}')
         print(f'Average balanced accuracy:\t{round(np.mean(results), 5)} (\u00B1 {round(np.std(results), 5)})\n')
+
 
 def has_sufficient_copper(spectrum, amount_t=0.5, drop_t=0.3):
     """
@@ -58,6 +60,7 @@ def has_sufficient_copper(spectrum, amount_t=0.5, drop_t=0.3):
             return False
     return True
 
+
 def set_classification_targets(cls_choice):
     """
     Validate classification choice by user and provide written detail about what the goal of the classification effort is.
@@ -76,6 +79,7 @@ def set_classification_targets(cls_choice):
         raise ValueError('Invalid classification target parameter')
     return cls_choice, cls_str
 
+
 def __get_labels(files, targets):
     """
     Extracts data labels from filenames of passed list of filepaths. Faster than loading all files into memory. Only
@@ -90,6 +94,7 @@ def __get_labels(files, targets):
     target_indices = [1, 2, 0]
     return np.array([int(basename(f).split('_')[target_indices[targets]]) for f in files], dtype=int)
 
+
 def get_transformation_dict(labels, dict_or_np='dict'):
     """
     Creates gapless list of labels (e.g. 0, 1, 2, 3, 4) from "sparse" data labels (e.g. 11, 28, 35, 73, 98).
@@ -102,6 +107,7 @@ def get_transformation_dict(labels, dict_or_np='dict'):
     if dict_or_np == 'np' or dict_or_np == 'numpy':
         trans_dict = np.array([trans_dict[i] if i in trans_dict.keys() else 0 for i in range(np.max(np.unique(labels))+1)])
     return trans_dict
+
 
 def transform_labels(label_data, trans_dict):
     """
@@ -116,6 +122,7 @@ def transform_labels(label_data, trans_dict):
     else:
         return trans_dict[label_data]
 
+
 def normalise_minmax(sample):
     """
     Normalises single sample according to minmax. Also strips wavelength information from sample.
@@ -129,6 +136,7 @@ def normalise_minmax(sample):
     else:
         print('Sample is empty')
 
+
 def normalise_snv(sample):
     """
     Standard normal variate (SNV) normalisation
@@ -141,6 +149,7 @@ def normalise_snv(sample):
     else:
         print('Sample is empty')
 
+
 def no_normalisation(sample):
     """
     No normalisation, just strips wavelength information from sample.
@@ -149,6 +158,7 @@ def no_normalisation(sample):
     :returns:       not normalised sample
     """
     return sample
+
 
 def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     """
@@ -204,6 +214,7 @@ def diagnose_output(y_true, y_pred, class_ids, show=True, file_name=None):
         plt.savefig(join('results', f'{file_name}.pdf'), bbox_inches='tight')
         plt.close(fig)
 
+
 def get_64shot_transition_matrix(test_filepaths):
     """
     Takes the file paths of the test set and computes a transition matrix from a ordered, consecutive list of file paths
@@ -251,6 +262,55 @@ def get_64shot_transition_matrix(test_filepaths):
 
     return transition_matrix
 
+
+def compute_accuracy_heatmaps(d, target_preds, cls_target, epochs):
+    """
+    Create 8x8 grid accuracy heatmaps using model predictions and the data transition matrices of the datasets. These
+    matrices detail where on the 8x8 grid each data sample will be placed. This needs special attention because gaps in
+    the original shot files need to be accounted for.
+
+    :param d: Dataset container holding all information from samples, names, class weights to transition information
+    :param target_preds: Model predictions, but reduced to the predicted value of just the correct label
+    :param cls_target: which classification target to pursue, same as the ones used by the model
+    :param epochs: how many epochs the model ran for, only used to name the save directory
+    """
+    # empty ndarray with max measurepoints +1 space for 8x8 grids
+    acc_heatmap = np.zeros((np.max(d['heatmap_tm'], axis=0)[0] + 1, 8, 8))
+
+    # use heatmap transition matrix to build 8x8 grid for each measure point
+    # necessary because sometimes shots are missing in between or at the end of measure points
+    for i, single_pred in enumerate(target_preds):
+        acc_heatmap[d['heatmap_tm'][i][0], d['heatmap_tm'][i][1], d['heatmap_tm'][i][2]] = single_pred
+
+    # info for titles and save directory
+    target_str = 'Classes' if cls_target == 0 else ('Subgroups' if cls_target == 1 else 'Minerals')
+    dest_dir = d['dataset_name'] + f'_c{cls_target}_e' + str(epochs) + '_64heatmap'
+    dest_path = join('results', dest_dir)
+    makedirs(dest_path, exist_ok=True)
+
+    # create heatmap image out of 8x8 grid for each measure point
+    for i,m in tqdm(enumerate(acc_heatmap), desc='heatmap_plt', total=len(acc_heatmap)):
+        fig = plt.figure(figsize = (10,7))
+        sn.heatmap(m, annot=True, fmt='.2f')
+        plt.gca().tick_params(axis='y', rotation=45)
+        plt.title(f'Per shot accuracy of a single measure point (No. {i}), Target: {target_str}')
+        plt.savefig(join(dest_path, f'mp_{i:03}.pdf'), bbox_inches='tight')
+        plt.close(fig) # needs to be closed, otherwise 100 image panels will pop up next time plt.show() is called
+
+    # average over all results
+    mean_heatmap = np.mean(acc_heatmap, axis=0)
+
+    plt.figure(figsize = (10,7))
+    sn.heatmap(mean_heatmap, annot=True, fmt='.2f')
+    plt.gca().tick_params(axis='y', rotation=45)
+    plt.title(f'Per shot accuracy, mean over all measure points, Target: {target_str}')
+    dataset_name = d['dataset_name']
+    plt.savefig(join(dest_path, f'{dataset_name}_c{cls_target}.pdf'), bbox_inches='tight')
+    plt.show()
+
+    np.save(join(dest_path, f'{dataset_name}_c{cls_target}.npy'), acc_heatmap)
+
+
 def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffle_and_repeat, norm_function, categorical=True):
     """
     Internal generator function to yield processed batches of data.
@@ -293,6 +353,7 @@ def __data_generator(files, targets, num_classes, batch_size, trans_dict, shuffl
 
             i += 1
         yield samples, labels
+
 
 def prepare_dataset(dataset_choice, target, batch_size, normalisation=2, train_shuffle_repeat=True, categorical_labels=True, mp_heatmap=False):
     """
@@ -369,6 +430,7 @@ def prepare_dataset(dataset_choice, target, batch_size, normalisation=2, train_s
         'data_str'     : data_str,
     }
 
+
 def print_dataset_info(dataset):
     """
     Prints formatted dataset information for visual inspection.
@@ -384,6 +446,7 @@ def print_dataset_info(dataset):
         else:
             print(f'\t\t{k:<13} : {v},')
     print('\t}\n')
+
 
 def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
     """
@@ -473,6 +536,7 @@ def prepare_mixture_dataset(target, batch_size, mixture_pct, normalisation=2):
         'data_str'     : f'hh_12 data augmented with {mixture_pct*100}% synthetic data',
     }
 
+
 def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg=regularizers.l2, reg_lambda=0.0001):
     model_name = name if name else f'model_{id}'
     with tf.name_scope(model_name):
@@ -483,7 +547,6 @@ def build_model(id, num_classes, name='model', inputs=None, new_input=False, reg
         net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
         net = Dropout(0.5)(net)
         net = Dense(256, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
-        # net = Dropout(0.5)(net)
         net = Dense(num_classes, activation='softmax')(net)
 
     model = Model(inputs=inputs, outputs=net, name=model_name)
@@ -504,7 +567,6 @@ def build_model_concat(id, num_classes, inputs=None, new_input=False, concat_mod
         net = Dropout(0.5)(net)
         if not concat_model:
             net = Dense(7810, activation='relu', kernel_regularizer=reg(reg_lambda))(net)
-            # net = Dropout(0.5)(net)
         net = Dense(num_classes, activation='softmax')(net)
 
     if not concat_model:

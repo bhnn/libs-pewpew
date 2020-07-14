@@ -1,15 +1,9 @@
 import argparse
-from os import makedirs
-from os.path import join
 
-import matplotlib.pyplot as plt
-import seaborn as sn
-from numpy import max, mean, save, zeros
 from sklearn.metrics import balanced_accuracy_score
-from tqdm import tqdm
 
-from utils import (build_model, diagnose_output, prepare_dataset,
-                   print_dataset_info, repeat_and_collate,
+from utils import (build_model, compute_accuracy_heatmaps, diagnose_output,
+                   prepare_dataset, print_dataset_info, repeat_and_collate,
                    set_classification_targets)
 
 
@@ -55,41 +49,7 @@ def classify(**args):
     target_preds = [pred[i][l] for i,l in enumerate(d['test_labels'])]
     pred = pred.argmax(axis=1)
 
-    # empty ndarray with max measurepoints +1 space for 8x8 grids
-    acc_heatmap = zeros((max(d['heatmap_tm'], axis=0)[0] + 1, 8, 8))
-
-    # use heatmap transition matrix to build 8x8 grid for each measure point
-    # necessary because sometimes shots are missing in between or at the end of measure points
-    for i, single_pred in enumerate(target_preds):
-        acc_heatmap[d['heatmap_tm'][i][0], d['heatmap_tm'][i][1], d['heatmap_tm'][i][2]] = single_pred
-
-    # info for titles and save directory
-    target_str = 'Classes' if cls_target == 0 else ('Subgroups' if cls_target == 1 else 'Minerals')
-    dest_dir = d['dataset_name'] + f'_c{cls_target}_e' + str(args['epochs']) + '_64heatmap'
-    dest_path = join('results', dest_dir)
-    makedirs(dest_path, exist_ok=True)
-
-    # create heatmap image out of 8x8 grid for each measure point
-    for i,m in tqdm(enumerate(acc_heatmap), desc='heatmap_plt', total=len(acc_heatmap)):
-        fig = plt.figure(figsize = (10,7))
-        sn.heatmap(m, annot=True, fmt='.2f')
-        plt.gca().tick_params(axis='y', rotation=45)
-        plt.title(f'Per shot accuracy of a single measure point (No. {i}), Target: {target_str}')
-        plt.savefig(join(dest_path, f'mp_{i:03}.pdf'), bbox_inches='tight')
-        plt.close(fig) # needs to be closed, otherwise 100 image panels will pop up next time plt.show() is called
-
-    # average over all results
-    mean_heatmap = mean(acc_heatmap, axis=0)
-
-    plt.figure(figsize = (10,7))
-    sn.heatmap(mean_heatmap, annot=True, fmt='.2f')
-    plt.gca().tick_params(axis='y', rotation=45)
-    plt.title(f'Per shot accuracy, mean over all measure points, Target: {target_str}')
-    dataset_name = d['dataset_name']
-    plt.savefig(join(dest_path, f'{dataset_name}_c{cls_target}.pdf'), bbox_inches='tight')
-    plt.show()
-
-    save(join(dest_path, f'{dataset_name}_c{cls_target}.npy'), acc_heatmap)
+    compute_accuracy_heatmaps(d, target_preds, cls_target, args['epochs'])
 
     return balanced_accuracy_score(d['test_labels'], pred)
 
