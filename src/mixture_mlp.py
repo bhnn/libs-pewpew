@@ -1,20 +1,15 @@
 import argparse
+import sys
 from os.path import join
 
 import numpy as np
+import yaml
 from sklearn.metrics import balanced_accuracy_score
 
 from utils import (build_model, diagnose_output, prepare_mixture_dataset,
                    print_dataset_info, repeat_and_collate,
                    set_classification_targets)
 
-with open('config/datasets.yaml') as cnf:
-    dataset_configs = yaml.safe_load(cnf)
-    try:
-        repo_path = dataset_configs['repo_path']
-    except KeyError as e:
-        print(f'Missing dataset config key: {e}')
-        sys.exit(1)
 
 def classify(**args):
     """
@@ -22,6 +17,14 @@ def classify(**args):
 
     :param args: keyword arguments passed from cli parser
     """
+    with open('config/datasets.yaml') as cnf:
+        dataset_configs = yaml.safe_load(cnf)
+        try:
+            repo_path = dataset_configs['repo_path']
+        except KeyError as e:
+            print(f'Missing dataset config key: {e}')
+            sys.exit(1)
+
     batch_size = 64
     repetitions = args['repetitions']
     # determine classification targets and parameters to construct datasets properly

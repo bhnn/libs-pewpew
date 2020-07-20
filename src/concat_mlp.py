@@ -1,7 +1,6 @@
 import argparse
 
 from sklearn.metrics import balanced_accuracy_score
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras.layers import Input
 from tensorflow.keras.utils import plot_model
 
