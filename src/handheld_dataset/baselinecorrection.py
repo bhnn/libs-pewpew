@@ -1,14 +1,16 @@
-import numpy as np
 import glob
 import os
-from pathlib import Path
-from scipy import sparse
-from scipy.sparse.linalg import spsolve
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-import yaml
 import sys
 import warnings
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import yaml
+from scipy import sparse
+from scipy.sparse.linalg import spsolve
+from tqdm import tqdm
+
 
 def baseline_als_optimized(y, lam=102, p=0.1, niter=10):
     """
