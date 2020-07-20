@@ -149,5 +149,5 @@ Visualisation of uncorrected spectrum, the baseline and the corrected spectrum
 ## Acknowledgements
 Thanks to
 * Pia Brinkmann, Dr. Daniel Riebe and the Department of Physical Chemistry for providing the dataset of handheld LIBS measurements
-* Federico Malerbo for providing parallelisable code to generate interpolated LIBS spectra from stick plot data
+* Federico Malerba for providing parallelisable code to generate interpolated LIBS spectra from stick plot data
 * Dr. Paul Prasse for providing code to handle receiving spectral data from the [NIST LIBS database](https://physics.nist.gov/PhysRefData/ASD/LIBS/libs-form.html)
